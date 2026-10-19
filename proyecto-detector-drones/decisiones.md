@@ -4,6 +4,7 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Decididas
 
+- **2026-10-19 — Sin fechas fijas en el plan; la Práctica 1 es individual.** Juan avanza a su ritmo y hace todo él mismo.
 - **2026-10-19 — Nube de la Práctica 1: Azure** (Azure for Students, ~20 USD de crédito restante). El profesor autorizó cualquier proveedor. Se apoya en los servicios gratis de 12 meses: VM B1s y PostgreSQL Flexible Server B1MS.
 - **2026-10-18 — El profesor autorizó cambiar el caso de uso de la Práctica 1** (temperatura y humedad con DHT) por uno orientado al proyecto. Los datos que llegan al servidor son los del nodo detector: rasgos WiFi, resumen del espectro nRF24 y eventos de detección. Se asume que el resto del enunciado se mantiene (servidor web, CSV y base de datos, nube con subredes, GitHub, presentación). Conviene guardar la autorización por escrito en `practica-1/entrega/`.
 - **2026-10-18 — Repositorio único `IAoT`** para Práctica 1 y proyecto final, con `AGENTS.md` para que OpenCode tenga el contexto. Motivo: un solo historial en GitHub, que además cumple el requisito de la Práctica 1.
@@ -21,5 +22,3 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Pendientes de definir
 
-- Fechas de entrega de la Práctica 1 y del proyecto final.
-- Si la Práctica 1 es individual o en equipo (el enunciado habla de "integrantes").
