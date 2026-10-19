@@ -22,7 +22,6 @@
 ## Pendientes de entorno
 
 - [ ] Habilitar `SERIAL_MCP_PLUGINS` y verificar que `idf.py` resuelva (OpenCode).
-- [ ] Confirmar que hay un sensor DHT11/DHT22 disponible para la Práctica 1.
 - [ ] Documentar pines reales en `Lab_ESP32/PINOUT.md`.
 - [ ] Crear el repositorio remoto en GitHub (privado) y enlazarlo.
 - [ ] Reunir: condensador 10–100 µF, cables Dupont, protoboard, cable USB de datos, protectores de hélice, cinta métrica.
