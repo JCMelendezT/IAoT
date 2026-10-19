@@ -1,6 +1,6 @@
 # AGENTS.md — Contexto para agentes (OpenCode / Claude)
 
-Lee este archivo completo antes de tocar código. La fuente de verdad del proyecto es este repositorio; el índice de estado está en `00-indice.md` y la bitácora de decisiones en `proyecto-detector-drones/decisiones.md`.
+Lee este archivo completo antes de tocar código. La fuente de verdad del proyecto es este repositorio; el plan por fases está en `PLAN.md`, el índice de estado en `00-indice.md` y la bitácora de decisiones en `proyecto-detector-drones/decisiones.md`.
 
 ## Qué es esto
 

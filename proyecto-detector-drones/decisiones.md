@@ -11,6 +11,9 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Propuestas por confirmar
 
+- **Nodo sensor + pasarela:** el ESP32-S3 solo escucha y detecta; le pasa los resultados por UART al ESP32 devkit, que está conectado al WiFi y los envía al servidor. Motivo: el S3 no puede estar en modo promiscuo saltando de canal y conectado al router a la vez.
+- **Ubuntu local en WSL2** con red en modo *mirrored* para que el ESP32 alcance el servidor. Alternativa: máquina virtual con Ubuntu en red puente.
+- **Base de datos en AWS como RDS PostgreSQL** en subredes privadas. Motivo: una EC2 en subred privada necesitaría NAT gateway para instalar paquetes, que tiene un costo por hora considerable.
 - **Framework del servidor (Práctica 1):** FastAPI (Python), por coherencia con el pipeline de ML. Alternativas permitidas por el enunciado: Flask, Django, Node, PHP, Java.
 - **Base de datos:** PostgreSQL en ambos entornos, para que el paso local → AWS (BD en subred privada) no cambie el código. SQLite solo como atajo de arranque.
 - **Protocolo ESP32 → servidor:** HTTP POST con JSON. MQTT queda como mejora opcional.

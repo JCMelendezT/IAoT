@@ -28,6 +28,7 @@
 
 ## Documentos clave
 
+- **Plan completo, explicado paso a paso:** `PLAN.md`
 - Diseño del detector: `Recursos de clase/Detector de drones por radiofrecuencia con IA en el borde.md`
 - Enunciado Práctica 1: `Actividades/Actividad 1 2026-2 (1).md`
 - Decisiones: `proyecto-detector-drones/decisiones.md`
