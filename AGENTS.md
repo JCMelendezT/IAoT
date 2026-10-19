@@ -14,7 +14,7 @@ Repositorio de Juan Camilo Meléndez para la materia **Inteligencia Artificial a
 - **No interferir, bloquear ni derribar drones.** El sistema es solo receptor pasivo. Interferir señales de radio es ilegal en Colombia. No escribas código que transmita para perturbar el espectro.
 - **Alcance:** solo 2,4 GHz. No prometas detección en 5,8 GHz ni FPV analógico, ni dirección o distancia exacta.
 - **Partición entrenamiento/prueba por sesión de captura**, nunca al azar entre ventanas. Un mismo `sesion_id` no puede estar en ambos conjuntos.
-- **Nunca versionar secretos:** credenciales WiFi, llaves AWS, tokens. Usa `secrets.h` o `.env` (ya están en `.gitignore`) y deja un `*.example` con valores falsos.
+- **Nunca versionar secretos:** credenciales WiFi, cadenas de conexión y llaves de Azure, tokens. Usa `secrets.h` o `.env` (ya están en `.gitignore`) y deja un `*.example` con valores falsos.
 - **No borres ni reescribas capturas crudas** en `proyecto-detector-drones/captura-datos/raw/`. Todo procesamiento escribe en `procesado/`.
 - **Pines:** no asumas pines. Cada conexión se documenta primero en `Lab_ESP32/PINOUT.md`.
 - Antes de cualquier acción destructiva (borrar, reescribir historial, flashear sobre firmware ajeno), pide confirmación.
@@ -68,7 +68,7 @@ proyecto-detector-drones/
 | MCP `engram` | Memoria de sesiones (bugs, contexto). Las decisiones formales van en `decisiones.md`, no solo en engram. |
 | Skills útiles | `esp32-firmware-engineer`, `diagnosing-bugs`, `tdd`, `work-unit-commits`, `scientific-paper`, `academic-writing`. |
 
-La nube de la Práctica 1 es **AWS** (el enunciado habla de IP elástica y grupos de seguridad). El MCP de Azure no aplica salvo que el profesor acepte otra nube.
+La nube de la Práctica 1 es **Azure** (Azure for Students; el profesor autorizó cualquier proveedor). Recursos: VM Ubuntu B1s con IP pública estática en la subred `app`, PostgreSQL Flexible Server B1MS con acceso privado en la subred `db`, NSG en ambas. Todo en un solo grupo de recursos. El crédito es limitado: no crees recursos de pago (NAT gateway, Bastion, VMs grandes) sin preguntar, y usa el MCP `azure-mcp` para consultar antes de crear.
 
 ## Cómo trabajar
 

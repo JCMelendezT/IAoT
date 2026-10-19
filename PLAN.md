@@ -14,7 +14,7 @@ Vamos a construir una cajita barata (un ESP32-S3 con una antena extra) que "escu
 Fase 0  Preparar el computador y las herramientas
 Fase 1  Hacer que el hardware "hable" (ver las señales en el PC)
 Fase 2  Práctica 1, parte 1: servidor web en tu PC
-Fase 3  Práctica 1, parte 2: el mismo servidor en AWS + GitHub + presentación
+Fase 3  Práctica 1, parte 2: el mismo servidor en Azure + GitHub + presentación
 Fase 4  Grabar datos (el dron, el celular, el fondo...)
 Fase 5  Entrenar la IA en el PC
 Fase 6  Meter la IA dentro del ESP32-S3
@@ -28,7 +28,7 @@ Las fases 0 a 3 cierran la Práctica 1. Las fases 4 a 8 cierran el proyecto fina
 
 | Quién | Qué hace |
 | --- | --- |
-| **Tú** | Todo lo físico: conectar cables, volar el dron, grabar sesiones, crear la cuenta de AWS, presentar. Y decidir. |
+| **Tú** | Todo lo físico: conectar cables, volar el dron, grabar sesiones, crear los recursos en Azure, presentar. Y decidir. |
 | **OpenCode** (en tu PC) | Escribe el código, compila, "flashea" el ESP32, lee lo que el ESP32 dice por el cable USB, corre el entrenamiento. |
 | **Claude** (este proyecto) | Planear, explicar, revisar decisiones, escribir el informe y la presentación. |
 
@@ -135,9 +135,11 @@ Esto es un diseño real de IoT ("nodo sensor + pasarela") y queda muy bien expli
 
 ---
 
-## Fase 3 — Práctica 1, parte 2: en la nube (AWS)
+## Fase 3 — Práctica 1, parte 2: en la nube (Azure)
 
-**Qué es:** el mismo servidor, pero en un computador de Amazon en internet, para que funcione desde cualquier lugar.
+**Qué es:** el mismo servidor, pero en un computador de Microsoft en internet, para que funcione desde cualquier lugar.
+
+**Por qué Azure:** el profesor autorizó cualquier proveedor, y tienes créditos de **Azure for Students**. Además, Azure for Students trae **12 meses gratis** de justo lo que necesitamos: una máquina virtual pequeña (B1s, 750 horas al mes) y una base de datos PostgreSQL administrada (Flexible Server B1MS, 750 horas al mes y 32 GB). Si esos servicios gratis siguen activos en tu cuenta, los ~20 dólares casi no se tocan.
 
 **Cómo se arma (en palabras simples):**
 
@@ -145,30 +147,44 @@ Esto es un diseño real de IoT ("nodo sensor + pasarela") y queda muy bien expli
 Internet
    │
    ▼
-[ Subred pública ]   EC2: el computador con el servidor, con IP elástica (dirección fija)
+[ Subred "app" ]   Máquina virtual Ubuntu (B1s) con el servidor + IP pública estática
    │
-   ▼  (solo el servidor puede pasar)
-[ Subred privada ]   RDS: la base de datos PostgreSQL, sin salida a internet
+   ▼  (solo la máquina virtual puede pasar, puerto 5432)
+[ Subred "db" ]    PostgreSQL Flexible Server (B1MS), con acceso privado: sin IP pública
 ```
+
+Todo vive dentro de una **red virtual** (VNet) y de un **grupo de recursos** (una "carpeta" que agrupa todo lo del proyecto).
+
+| El enunciado pide | En Azure se llama |
+| --- | --- |
+| Subred pública | Subred `app`, donde la máquina virtual tiene IP pública |
+| Subred privada | Subred `db`, delegada a PostgreSQL, sin IP pública |
+| IP elástica | **IP pública estática** |
+| Grupos de seguridad | **NSG** (grupos de seguridad de red) |
 
 - **Subred pública:** la parte que se ve desde internet. Ahí va el servidor.
 - **Subred privada:** la parte escondida. Ahí va la base de datos, para que nadie de afuera la toque.
-- **IP elástica:** una dirección fija, para que el ESP32 siempre sepa a dónde mandar.
-- **Grupos de seguridad:** las "porterías". Al servidor solo se entra por el puerto de la aplicación (y SSH solo desde tu IP). A la base de datos solo entra el servidor.
+- **IP pública estática:** una dirección fija, para que el ESP32 siempre sepa a dónde mandar.
+- **NSG:** las "porterías". Al servidor solo se entra por el puerto de la aplicación (y SSH solo desde tu IP). A la base de datos solo entra la subred `app`.
 
-**Por qué RDS y no instalar PostgreSQL a mano:** si pones una máquina en la subred privada, para instalarle cosas necesita salida a internet (un "NAT gateway"), y eso **cuesta bastante dinero por hora**. RDS es la base de datos ya armada por Amazon y no lo necesita.
+**Por qué una base administrada y no instalar PostgreSQL en otra máquina:** es lo que Azure regala 12 meses, Microsoft se encarga de las copias de seguridad, y te ahorras configurar una segunda máquina en la subred privada.
 
-**Cuidado con la plata:**
-- Pregúntale al profesor si la UAO da **AWS Academy (Learner Lab)**. Si sí, úsalo: trae créditos y no pones tu tarjeta.
-- Si usas tu propia cuenta: activa una **alarma de facturación**, y **apaga o borra todo** después de presentar. La IP elástica y la base de datos cobran mientras existan.
+**Cuidado con los 20 dólares:**
+1. Primero revisa en el portal, en **"Servicios gratuitos"** de tu suscripción, que la VM B1s y PostgreSQL B1MS sigan disponibles. Los servicios gratis duran 12 meses desde que se creó o renovó la cuenta.
+2. Crea un **presupuesto con alerta** (Cost Management → Presupuestos), por ejemplo de 5 dólares.
+3. La **IP pública estática siempre cobra** (unos pocos dólares al mes), aunque la máquina esté apagada. Es el gasto principal.
+4. **Detén** la máquina virtual (que quede "desasignada") y la base de datos cuando no las uses. Ojo: Azure vuelve a prender la base sola a los 7 días de detenida.
+5. Después de presentar, **borra el grupo de recursos completo**. Eso elimina todo de un golpe y deja de cobrar.
 
-**Qué haces tú:** crear la cuenta o entrar al Learner Lab, seguir los pasos de consola que te iremos dando, guardar capturas de pantalla para la entrega.
+Lo bueno de Azure for Students: si se acaba el crédito, la suscripción se desactiva en vez de cobrarte a la tarjeta.
 
-**Qué hace OpenCode:** prepara el servidor para que lea la dirección de la base desde un archivo `.env`, y un script para instalarlo en la EC2.
+**Qué haces tú:** seguir los pasos en el portal de Azure (te los doy uno por uno), y guardar capturas de pantalla para la entrega. La primera vez conviene hacerlo a mano en el portal para entender cada pieza y poder explicarla en la presentación.
+
+**Qué hace OpenCode:** prepara el servidor para que lea la dirección de la base desde un archivo `.env`, un script para instalarlo en la máquina virtual, y puede revisar los recursos con su MCP de Azure.
 
 **Entrega de la práctica:** subir el repositorio a GitHub (privado o compartido con el profesor), y la presentación en `practica-1/entrega/`.
 
-**Cómo sabes que terminaste:** el ESP32 manda datos a la IP elástica y aparecen en la base de datos de RDS. Lo muestras en vivo.
+**Cómo sabes que terminaste:** el ESP32 manda datos a la IP pública estática y aparecen en la base de datos PostgreSQL de Azure. Lo muestras en vivo.
 
 ---
 
@@ -264,13 +280,13 @@ La curva de distancia es **el resultado propio del proyecto**. Sirve para decir 
 | El nRF24 no responde o da basura | Revisar condensador, cables cortos, alimentación de 3,3 V (nunca 5 V). |
 | El Neo 2 transmite en 5,8 GHz | Forzar 2,4 GHz si la app lo permite. Si no, lo replanteamos juntos antes de grabar. |
 | El ESP32 no encuentra el servidor de WSL2 | Modo "mirrored" de WSL2 o máquina virtual con Ubuntu. |
-| AWS empieza a cobrar | Alarma de facturación, y borrar todo al terminar. |
+| Se acaban los créditos de Azure | Presupuesto con alerta, detener VM y base cuando no se usan, borrar el grupo de recursos al terminar. |
 | La CNN no cabe en el chip | Hacerla más pequeña, o quedarse con el bosque aleatorio. |
 
 ## Pendientes antes de arrancar
 
 - [ ] **Fechas** de entrega de la Práctica 1 y del proyecto final (para poner semanas a cada fase).
-- [ ] ¿La UAO da **AWS Academy / Learner Lab**?
+- [ ] ¿Siguen activos los **servicios gratis** de Azure for Students (VM B1s y PostgreSQL B1MS)?
 - [ ] ¿Tu Windows es **Windows 11**? (para el modo de red de WSL2)
 - [ ] ¿La Práctica 1 es **individual o en equipo**?
 
@@ -292,10 +308,11 @@ La curva de distancia es **el resultado propio del proyecto**. Sirve para decir 
 - **CSV:** archivo de texto con datos en filas y columnas; se abre en Excel.
 - **PostgreSQL / base de datos:** donde se guardan los datos de forma ordenada y consultable.
 - **WSL2:** Ubuntu funcionando dentro de Windows.
-- **EC2 / RDS:** en AWS, un computador alquilado (EC2) y una base de datos ya armada (RDS).
+- **Máquina virtual (VM) / PostgreSQL Flexible Server:** en Azure, un computador alquilado y una base de datos ya armada por Microsoft.
+- **VNet / grupo de recursos:** la red privada del proyecto en Azure y la "carpeta" que agrupa todos sus recursos.
 - **Subred pública / privada:** zonas de la red en la nube; la pública se ve desde internet, la privada no.
-- **IP elástica:** dirección fija en internet.
-- **Grupo de seguridad:** reglas de quién puede entrar y por qué puerto.
+- **IP pública estática ("IP elástica" en AWS):** dirección fija en internet.
+- **NSG (grupo de seguridad de red):** reglas de quién puede entrar y por qué puerto.
 - **Bosque aleatorio:** modelo de IA hecho de muchos árboles de preguntas sí/no que votan.
 - **CNN:** red neuronal que aprende patrones en imágenes.
 - **Cuantizar / int8:** comprimir el modelo para que quepa y corra rápido en el chip.
