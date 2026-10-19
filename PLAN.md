@@ -285,10 +285,8 @@ La curva de distancia es **el resultado propio del proyecto**. Sirve para decir 
 
 ## Pendientes antes de arrancar
 
-- [ ] **Fechas** de entrega de la Práctica 1 y del proyecto final (para poner semanas a cada fase).
 - [ ] ¿Siguen activos los **servicios gratis** de Azure for Students (VM B1s y PostgreSQL B1MS)?
-- [ ] ¿Tu Windows es **Windows 11**? (para el modo de red de WSL2)
-- [ ] ¿La Práctica 1 es **individual o en equipo**?
+- [ ] Confirmar con `winver` que es **Windows 11** (para el modo de red de WSL2).
 
 ---
 

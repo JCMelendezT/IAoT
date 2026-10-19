@@ -4,12 +4,12 @@
 
 ## Entregas
 
-| Entrega | Fecha límite | Estado |
+| Entrega | Fecha | Estado |
 | --- | --- | --- |
-| Práctica 1, parte 1 (servidor local Ubuntu + ESP32 + CSV y BD) | _por definir_ | Sin iniciar |
-| Práctica 1, parte 2 (Azure: subred pública/privada, IP pública estática, NSG) | _por definir_ | Sin iniciar |
-| Práctica 1: repositorio GitHub + presentación | _por definir_ | Sin iniciar |
-| Proyecto final: detector de drones RF | _por definir_ | Diseño listo, sin hardware conectado |
+| Práctica 1, parte 1 (servidor local Ubuntu + ESP32 + CSV y BD) | Sin fecha fija | Sin iniciar |
+| Práctica 1, parte 2 (Azure: subred pública/privada, IP pública estática, NSG) | Sin fecha fija | Sin iniciar |
+| Práctica 1: repositorio GitHub + presentación | Sin fecha fija | Sin iniciar |
+| Proyecto final: detector de drones RF | Sin fecha fija | Diseño listo, sin hardware conectado |
 
 ## Plan del proyecto final (del doc de diseño)
 
