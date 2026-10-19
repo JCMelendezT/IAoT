@@ -21,7 +21,7 @@ Repositorio de Juan Camilo Meléndez para la materia **Inteligencia Artificial a
 
 ## Hardware disponible
 
-ESP32-S3, ESP32 devkit, nRF24L01+ (uno para el detector), módulo LoRa Ra-02, teclados matriciales, módulos de grabación y parlante, acelerómetros, RFID, pantallas RGB, dron DJI Neo 2 (fuente de datos de prueba). El nRF24 necesita condensador de 10–100 µF entre VCC y GND. La Práctica 1 exige un sensor DHT11/DHT22: confirmar que Juan tiene uno antes de diseñar sobre él.
+ESP32-S3, ESP32 devkit, nRF24L01+ (uno para el detector), módulo LoRa Ra-02, teclados matriciales, módulos de grabación y parlante, acelerómetros, RFID, pantallas RGB, dron DJI Neo 2 (fuente de datos de prueba). El nRF24 necesita condensador de 10–100 µF entre VCC y GND. La Práctica 1 no usa DHT: el profesor autorizó orientarla al proyecto, así que sus datos son los del propio nodo detector.
 
 Prioriza lo que ya hay. No propongas comprar piezas salvo que Juan lo pida.
 
@@ -38,7 +38,7 @@ Lab_ESP32/
     wifi-sniffer/            rasgos WiFi por ventana de 2 s
     nodo-detector/           firmware final: sniffer + nRF24 + modelos + alerta
 practica-1/
-  esp32-dht/                 firmware del cliente que envía lecturas
+  esp32-cliente/             firmware del cliente que envía datos al servidor
   servidor/                  aplicación web (API + CSV + base de datos)
   datos/                     CSV de salida (la base local no se versiona)
   entrega/                   capturas, diagramas, guion de la presentación
