@@ -33,12 +33,16 @@ La ESP32 devkit queda opcional como segundo cliente de pruebas.
 - [ ] Firmware cliente que envíe datos al servidor (`esp32-cliente/`).
 - [ ] Verificar en el CSV y en la base que los datos medidos llegan completos.
 
-## Parte 2 — Nube (AWS)
+## Parte 2 — Nube (Azure)
 
-- [ ] Máquina virtual con la aplicación en subred **pública**, con **IP elástica**.
-- [ ] Base de datos en subred **privada**.
-- [ ] Grupos de seguridad: solo el puerto necesario hacia la aplicación; la base solo accesible desde el servidor.
-- [ ] Repetir la prueba del nodo contra la IP elástica.
+El profesor autorizó cualquier proveedor; se usa Azure for Students. Detalle y cuidados de costo en `../PLAN.md`, Fase 3.
+
+
+- [ ] Máquina virtual Ubuntu (B1s) con la aplicación en la subred **pública** `app`, con **IP pública estática** (equivale a la IP elástica).
+- [ ] PostgreSQL Flexible Server (B1MS) con acceso privado en la subred **privada** `db`.
+- [ ] NSG (grupos de seguridad): solo el puerto de la aplicación abierto a internet, SSH solo desde tu IP, y el 5432 de la base solo desde la subred `app`.
+- [ ] Presupuesto con alerta en Cost Management.
+- [ ] Repetir la prueba del nodo contra la IP pública estática.
 
 ## Entrega
 

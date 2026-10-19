@@ -7,7 +7,7 @@
 | Entrega | Fecha límite | Estado |
 | --- | --- | --- |
 | Práctica 1, parte 1 (servidor local Ubuntu + ESP32 + CSV y BD) | _por definir_ | Sin iniciar |
-| Práctica 1, parte 2 (AWS: subred pública/privada, IP elástica, grupos de seguridad) | _por definir_ | Sin iniciar |
+| Práctica 1, parte 2 (Azure: subred pública/privada, IP pública estática, NSG) | _por definir_ | Sin iniciar |
 | Práctica 1: repositorio GitHub + presentación | _por definir_ | Sin iniciar |
 | Proyecto final: detector de drones RF | _por definir_ | Diseño listo, sin hardware conectado |
 
