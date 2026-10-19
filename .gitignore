@@ -1,0 +1,37 @@
+# Material de clase pesado (queda solo en local)
+Recursos de clase/*.pdf
+
+# Secretos y credenciales (WiFi, AWS, tokens)
+.env
+*.env
+secrets.h
+**/secrets.h
+*.pem
+*.key
+credentials*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# ESP-IDF / PlatformIO
+build/
+sdkconfig.old
+managed_components/
+.pio/
+dependencies.lock
+
+# Capturas crudas y datos generados (se versiona solo el registro sesiones.csv)
+proyecto-detector-drones/captura-datos/raw/*
+!proyecto-detector-drones/captura-datos/raw/.gitkeep
+practica-1/datos/*.db
+practica-1/datos/*.sqlite
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
