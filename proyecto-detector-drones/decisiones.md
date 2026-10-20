@@ -16,6 +16,7 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Propuestas por confirmar
 
+- **Clase `dron-app` fuera del entrenamiento:** en modo solo celular la app no deja elegir banda y el Neo 2 no aparece ni en el nRF24 ni en el sniffer (dos pruebas, 2026-10-19 y 2026-10-20), así que probablemente usa 5 GHz. Propuesta: entrenar con `dron-control` en 2,4 GHz y reportar el modo celular como límite comprobado. Pendiente de que Juan confirme.
 - **Nodo sensor + pasarela:** el ESP32-S3 solo escucha y detecta; le pasa los resultados por UART al ESP32 devkit, que está conectado al WiFi y los envía al servidor. Motivo: el S3 no puede estar en modo promiscuo saltando de canal y conectado al router a la vez.
 - **Ubuntu local en WSL2** con red en modo *mirrored* para que el ESP32 alcance el servidor. Alternativa: máquina virtual con Ubuntu en red puente.
 - **Base de datos en Azure como PostgreSQL Flexible Server** (B1MS, acceso privado en subred delegada). Motivo: entra en los servicios gratis de Azure for Students y evita una segunda VM en la subred privada.
