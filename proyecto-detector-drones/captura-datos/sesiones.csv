@@ -1,1 +1,4 @@
 sesion_id,fecha,clase,estado,distancia_m,escenario,sensor,archivo_raw,notas
+20261019_fondo-na_0m_casa,2026-10-19,fondo,na,0,casa,nrf24-cascada,raw/20261019_fondo-na_0m_casa.txt,"Exploratoria. Silencio: WiFi de la casa en columnas 7-22 (2407-2422 MHz), vecinos en 41-62."
+20261020_dron-app-tierra_1m_casa_bandadual,2026-10-20,dron-app,tierra,1,casa,nrf24-cascada,raw/20261020_dron-app-tierra_1m_casa_bandadual.txt,"Exploratoria. Neo 2 en Banda dual: NO se ve en 2,4 GHz (probablemente usó 5,8 GHz). Distancia aproximada 1-2 m."
+20261020_dron-control-mixto_1m_casa_exploratoria,2026-10-20,dron-control,mixto,1,casa,nrf24-cascada,raw/20261020_dron-control-mixto_1m_casa_exploratoria.txt,"Exploratoria, no usar para entrenar (varias condiciones en una toma). ~12:44 control+celular+dron en 2,4 GHz; ~12:45 cambio a 5,8 GHz (desaparece); ~12:46 2,4 GHz con hélices girando (máxima actividad, pico ~2445 MHz); ~12:47 apagado. Distancia aproximada 1-2 m."
