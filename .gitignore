@@ -30,6 +30,9 @@ proyecto-detector-drones/captura-datos/raw/*
 practica-1/datos/*.db
 practica-1/datos/*.sqlite
 
+# Caché de herramientas (OpenCode)
+.atl/
+
 # Sistema / editor
 .DS_Store
 Thumbs.db
