@@ -4,6 +4,7 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Decididas
 
+- **2026-10-20 — Clases para entrenar: `fondo`, `celular-video`, `bluetooth` y `dron-control` (siempre en 2,4 GHz).** El modo solo celular del Neo 2 no se detecta (probablemente usa 5 GHz) y se reporta como límite comprobado. Las capturas se graban con `captura-datos/Capturar.bat` y el firmware `nodo_captura`.
 - **2026-10-20 — Hallazgo del sniffer WiFi:** con el Neo 2 usando el control en 2,4 GHz no aparece ninguna MAC de DJI (su enlace no es WiFi estándar), pero el ESP32 decodifica un 64 % menos de tramas WiFi y ve un 67 % menos de aparatos mientras el dron está encendido. Esa caída es un rasgo útil para el modelo WiFi. Falta probar el modo solo celular, donde el dron sí debería usar WiFi.
 - **2026-10-20 — Las capturas con el DJI Neo 2 se hacen con la transmisión fijada en 2,4 GHz** (DJI Fly → Trans. → Frecuencia), canal automático, 20 MHz. Motivo: en Banda dual o 5,8 GHz el dron no aparece en la cascada del nRF24. Prueba exploratoria: en 2,4 GHz la actividad en 2423–2456 MHz sube de 4 a 9 veces frente al fondo, con pico cerca de 2445 MHz; al pasar a 5,8 GHz vuelve al nivel de fondo. Esto confirma el límite de alcance del diseño (solo 2,4 GHz) y va en el informe.
 - **2026-10-19 — El firmware se escribe en Arduino IDE** (sketches en `Lab_ESP32/firmware/`). Juan prefiere Arduino; AGENTS.md no se modifica por ahora.
@@ -16,7 +17,6 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Propuestas por confirmar
 
-- **Clase `dron-app` fuera del entrenamiento:** en modo solo celular la app no deja elegir banda y el Neo 2 no aparece ni en el nRF24 ni en el sniffer (dos pruebas, 2026-10-19 y 2026-10-20), así que probablemente usa 5 GHz. Propuesta: entrenar con `dron-control` en 2,4 GHz y reportar el modo celular como límite comprobado. Pendiente de que Juan confirme.
 - **Nodo sensor + pasarela:** el ESP32-S3 solo escucha y detecta; le pasa los resultados por UART al ESP32 devkit, que está conectado al WiFi y los envía al servidor. Motivo: el S3 no puede estar en modo promiscuo saltando de canal y conectado al router a la vez.
 - **Ubuntu local en WSL2** con red en modo *mirrored* para que el ESP32 alcance el servidor. Alternativa: máquina virtual con Ubuntu en red puente.
 - **Base de datos en Azure como PostgreSQL Flexible Server** (B1MS, acceso privado en subred delegada). Motivo: entra en los servicios gratis de Azure for Students y evita una segunda VM en la subred privada.
