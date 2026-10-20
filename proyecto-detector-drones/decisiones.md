@@ -4,6 +4,7 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Decididas
 
+- **2026-10-20 — Hallazgo del sniffer WiFi:** con el Neo 2 usando el control en 2,4 GHz no aparece ninguna MAC de DJI (su enlace no es WiFi estándar), pero el ESP32 decodifica un 64 % menos de tramas WiFi y ve un 67 % menos de aparatos mientras el dron está encendido. Esa caída es un rasgo útil para el modelo WiFi. Falta probar el modo solo celular, donde el dron sí debería usar WiFi.
 - **2026-10-20 — Las capturas con el DJI Neo 2 se hacen con la transmisión fijada en 2,4 GHz** (DJI Fly → Trans. → Frecuencia), canal automático, 20 MHz. Motivo: en Banda dual o 5,8 GHz el dron no aparece en la cascada del nRF24. Prueba exploratoria: en 2,4 GHz la actividad en 2423–2456 MHz sube de 4 a 9 veces frente al fondo, con pico cerca de 2445 MHz; al pasar a 5,8 GHz vuelve al nivel de fondo. Esto confirma el límite de alcance del diseño (solo 2,4 GHz) y va en el informe.
 - **2026-10-19 — El firmware se escribe en Arduino IDE** (sketches en `Lab_ESP32/firmware/`). Juan prefiere Arduino; AGENTS.md no se modifica por ahora.
 - **2026-10-19 — Sin fechas fijas en el plan; la Práctica 1 es individual.** Juan avanza a su ritmo y hace todo él mismo.
