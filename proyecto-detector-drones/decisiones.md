@@ -4,6 +4,7 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Decididas
 
+- **2026-10-21 — Práctica 1 parte 1 funcionando de punta a punta:** S3 (`nodo_s3_uart`) → cable GPIO17→GPIO16 → devkit (`devkit_pasarela`) → WiFi → FastAPI → PostgreSQL + CSV → página en vivo (`http://localhost:8000` desde el PC; la IP 192.168.40.17 sirve para otros aparatos). Llegan ventanas, latidos de `nodo-s3` (por cable) y de `pasarela-1`.
 - **2026-10-21 — Servidor de la Práctica 1: FastAPI + PostgreSQL desde el inicio** (sin pasar por SQLite), en Ubuntu WSL con red *mirrored*. Cada registro se guarda también en CSV. Protocolo ESP32 → servidor: HTTP POST con JSON (MQTT queda como mejora opcional). Alerta del servidor con regla provisional: hay tramas DJI o el nivel promedio de la banda 2423–2456 MHz supera `UMBRAL_BANDA` (2,5). En la grabación de fondo el nivel llegó como máximo a ~1,9, sin falsas alarmas; falta calibrarlo con grabaciones del dron. Ojo: el router de la casa está en el canal 8 (≈2437–2457 MHz), dentro de esa banda.
 - **2026-10-21 — Ruta ESP32 → PC probada:** el devkit mandó latidos cada 5 s a la IP del PC (192.168.40.17) y llegaron todos.
 - **2026-10-21 — Devkit conectado a VICTORIA (prueba superada):** el ESP32 devkit (COM10, chip CP210x) se conecta en 2,4 GHz, canal 8, señal estable entre −58 y −65 dBm, IP 192.168.40.42 en la red 192.168.40.x (router 192.168.40.1). Para subirle programas hay que mantener BOOT durante "Connecting...". Confirma que el router de la casa en 2,4 GHz está en el canal 8.
@@ -26,4 +27,9 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 - **Base de datos en Azure como PostgreSQL Flexible Server** (B1MS, acceso privado en subred delegada). Motivo: entra en los servicios gratis de Azure for Students y evita una segunda VM en la subred privada.
 
 ## Pendientes de definir
+
+- **Ventanas cada ~8 s en vez de 2 s** (21-oct, numeración seguida, sin pérdidas). Sospecha: con el COM11 sin nadie leyendo, cada `Serial.println` por USB del S3 se queda esperando y frena el ciclo. Probar con el Monitor Serie abierto o reducir lo que se imprime por USB cuando no hay capturador.
+- **Señal máxima de −5 a −17 dBm en el sniffer:** probablemente el propio devkit transmitiendo a centímetros del S3. Separar las placas o ignorar la MAC del devkit para que no ensucie `aparatos_fuertes` ni la alerta.
+- Calibrar `UMBRAL_BANDA` (hoy 2,5) con grabaciones del dron; el router está en el canal 8, dentro de la banda.
+- Falta de la parte 1: captura de evidencia (conteo en PostgreSQL + CSV + página) y subir el repo a GitHub.
 
