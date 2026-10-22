@@ -6,7 +6,7 @@ la pagina sin tener las placas conectadas.
 
 Uso (en Ubuntu, con el servidor encendido en otra ventana):
     python3 simular_nodo.py
-    python3 simular_nodo.py --archivo ../../proyecto-detector-drones/captura-datos/raw/OTRA.txt
+    python3 simular_nodo.py --archivo ruta/a/otra_grabacion.txt
     python3 simular_nodo.py --rapido        # sin esperar los 2 s entre ventanas
 
 Solo usa grabaciones hechas con nodo_captura (lineas N, y W,).
@@ -19,8 +19,8 @@ import urllib.request
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
-RAW = AQUI.parent.parent / "proyecto-detector-drones" / "captura-datos" / "raw"
-POR_DEFECTO = RAW / "20261020_fondo-na_1m_casa_132912.txt"
+# Grabacion real incluida en el repositorio (1 minuto, sin dron, 2026-10-20).
+POR_DEFECTO = AQUI / "ejemplos" / "fondo_sin_dron_1min.txt"
 
 CAMPOS_W = ["ms", "ventana", "canal", "tramas", "aparatos", "mgmt", "datos", "tam_prom",
             "rssi_prom", "rssi_max", "tramas_debiles", "aparatos_fuertes", "tramas_dji", "rssi_max_dji"]

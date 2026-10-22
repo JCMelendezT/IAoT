@@ -18,7 +18,15 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PUERTO = 8000
-RED_CASA = "192.168.40."
+
+
+def ip_del_wifi(ips):
+    """Elige la IP del PC en la red de la casa (192.168.x, luego 10.x, luego 172.16-31.x)."""
+    for prefijo in ("192.168.", "10.", "172."):
+        for ip in ips:
+            if ip.startswith(prefijo):
+                return ip
+    return None
 
 
 def ips_locales():
@@ -65,12 +73,12 @@ if __name__ == "__main__":
     print("=" * 60)
     print(f" Servidor de prueba escuchando en el puerto {PUERTO}")
     ips = ips_locales()
-    de_la_casa = [ip for ip in ips if ip.startswith(RED_CASA)]
-    if de_la_casa:
-        print(f" IP de este PC en tu WiFi: {de_la_casa[0]}   <-- esta es la que necesitas")
-        print(f" Prueba en el celular:     http://{de_la_casa[0]}:{PUERTO}")
+    ip_pc = ip_del_wifi(ips)
+    if ip_pc:
+        print(f" IP de este PC en tu WiFi: {ip_pc}   <-- esta es la que necesitas")
+        print(f" Prueba en el celular:     http://{ip_pc}:{PUERTO}")
     else:
-        print(f" OJO: no encontre ninguna IP que empiece por {RED_CASA}")
+        print(" OJO: no encontre la IP de este PC en la red")
         print(f" IPs encontradas: {', '.join(ips) or 'ninguna'}")
         print(" Revisa que el modo 'mirrored' de WSL este activo (ver instrucciones).")
     print(" Esperando mensajes... (Ctrl+C para salir)")

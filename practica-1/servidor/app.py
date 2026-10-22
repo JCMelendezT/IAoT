@@ -34,7 +34,6 @@ from pydantic import BaseModel, Field
 
 CARPETA = Path(__file__).resolve().parent
 CARPETA_DATOS = CARPETA.parent / "datos"
-RED_CASA = "192.168.40."
 
 # Banda donde aparecio el DJI Neo 2 con control (2423..2456 MHz) = columnas 23..56.
 BANDA_DRON = (23, 57)
@@ -238,6 +237,15 @@ def pagina():
 
 
 # ---------------------------------------------------------------- arranque
+def ip_del_wifi(ips):
+    """Elige la IP del PC en la red de la casa (192.168.x, luego 10.x, luego 172.16-31.x)."""
+    for prefijo in ("192.168.", "10.", "172."):
+        for ip in ips:
+            if ip.startswith(prefijo):
+                return ip
+    return None
+
+
 def ips_locales():
     try:
         salida = subprocess.run(["hostname", "-I"], capture_output=True, text=True).stdout.split()
@@ -256,13 +264,14 @@ if __name__ == "__main__":
         print("Detalle:", e)
         raise SystemExit(1)
 
-    casa = [ip for ip in ips_locales() if ip.startswith(RED_CASA)]
+    ip_pc = ip_del_wifi(ips_locales())
     print("=" * 64)
     print(f" Servidor del detector escuchando en el puerto {PUERTO}")
     print(f" Base de datos: OK   |   CSV en: {CARPETA_DATOS}")
-    if casa:
-        print(f" IP de este PC en tu WiFi: {casa[0]}")
-        print(f" Pagina en vivo:           http://{casa[0]}:{PUERTO}")
+    print(f" Pagina en este PC:        http://localhost:{PUERTO}")
+    if ip_pc:
+        print(f" IP de este PC en tu WiFi: {ip_pc}   (ponla en secrets.h del devkit)")
+        print(f" Pagina desde el celular:  http://{ip_pc}:{PUERTO}")
     print(" Ctrl+C para salir")
     print("=" * 64, flush=True)
     uvicorn.run(app, host="0.0.0.0", port=PUERTO, access_log=False, log_level="warning")
