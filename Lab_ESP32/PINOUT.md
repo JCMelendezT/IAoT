@@ -21,3 +21,12 @@ Estado: **confirmado** (2026-10-19). Prueba de vida en Arduino IDE (`firmware/nr
 | Pantalla RGB | _pendiente_ | _pendiente_ | |
 | Parlante | _pendiente_ | _pendiente_ | |
 | Teclado matricial | _pendiente_ | _pendiente_ | |
+
+## Cable S3 → devkit (Práctica 1)
+
+| ESP32-S3 | ESP32 devkit | Para qué |
+|---|---|---|
+| GPIO 17 (TX de UART1) | GPIO 16 (RX2) | el S3 manda cada ventana, latido y alerta |
+| GND | GND | referencia común |
+
+Velocidad 115200. Las dos placas trabajan a 3,3 V. GPIO 18 del S3 queda reservado (sin conectar).

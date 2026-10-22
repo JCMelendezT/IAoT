@@ -9,8 +9,9 @@ CREATE TABLE IF NOT EXISTS latidos (
     nodo         TEXT    NOT NULL,
     contador     BIGINT  NOT NULL,
     ms           BIGINT  NOT NULL,
-    rssi         INTEGER NOT NULL
+    rssi         INTEGER           -- vacio = placa sin WiFi propio
 );
+ALTER TABLE latidos ALTER COLUMN rssi DROP NOT NULL;
 
 -- Resumen de lo que el nodo escucho en una ventana de 2 segundos.
 CREATE TABLE IF NOT EXISTS ventanas (
