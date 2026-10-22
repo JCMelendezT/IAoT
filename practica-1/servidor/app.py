@@ -78,7 +78,7 @@ class Latido(BaseModel):
     nodo: str = Field(min_length=1, max_length=32)
     contador: int = Field(ge=0)
     ms: int = Field(ge=0)
-    rssi: int = Field(ge=-128, le=0)
+    rssi: Optional[int] = Field(default=None, ge=-128, le=0)  # vacio = placa sin WiFi propio (va por cable)
 
 
 class Ventana(BaseModel):
@@ -182,7 +182,8 @@ app = FastAPI(title="Detector de drones — Practica 1", version="1.0", lifespan
 @app.post("/api/latido")
 def recibir_latido(latido: Latido, request: Request):
     guardar("latidos", latido.model_dump(), request)
-    print(f"[{hora()}] latido   {latido.nodo} #{latido.contador}  senal {latido.rssi} dBm", flush=True)
+    senal = f"senal {latido.rssi} dBm" if latido.rssi is not None else "por cable (sin WiFi propio)"
+    print(f"[{hora()}] latido   {latido.nodo} #{latido.contador}  {senal}", flush=True)
     return {"ok": True}
 
 
@@ -201,7 +202,8 @@ def recibir_ventana(v: Ventana, request: Request):
 @app.post("/api/eventos")
 def recibir_evento(e: Evento, request: Request):
     guardar("eventos", e.model_dump(), request)
-    print(f"[{hora()}] EVENTO   {e.nodo} {e.tipo} {e.clase or ''} {e.probabilidad or ''}", flush=True)
+    extra = " ".join(str(x) for x in (e.clase, e.probabilidad, e.detalle) if x is not None)
+    print(f"[{hora()}] EVENTO   {e.nodo} {e.tipo}  {extra}", flush=True)
     return {"ok": True}
 
 
@@ -211,7 +213,8 @@ def resumen():
         nodos = con.execute("""
             SELECT DISTINCT ON (nodo) nodo, recibido_en, contador, rssi,
                    EXTRACT(EPOCH FROM now() - recibido_en)::int AS hace_s
-            FROM latidos ORDER BY nodo, recibido_en DESC""").fetchall()
+            FROM latidos WHERE recibido_en > now() - interval '1 hour'
+            ORDER BY nodo, recibido_en DESC""").fetchall()
         ventanas = con.execute("""
             SELECT recibido_en, nodo, ventana, canal, tramas, aparatos, rssi_prom, rssi_max,
                    tramas_dji, espectro, nivel_banda_dron, alerta, motivo_alerta

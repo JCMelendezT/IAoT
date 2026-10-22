@@ -118,7 +118,7 @@ async function actualizar() {
       ? d.nodos.map((n) => {
           const vivo = n.hace_s <= 15;
           return `<div><span class="punto ${vivo ? "vivo" : "muerto"}"></span>${esc(n.nodo)} · ` +
-                 (vivo ? `${n.rssi} dBm` : `sin señal hace ${n.hace_s} s`) + `</div>`;
+                 (vivo ? (n.rssi === null ? "por cable" : `${n.rssi} dBm`) : `sin señal hace ${n.hace_s} s`) + `</div>`;
         }).join("")
       : "Ninguna todavía";
 
