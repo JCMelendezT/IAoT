@@ -18,18 +18,30 @@ La alerta sigue decidiéndose en el borde, sin depender de la nube. El servidor 
 ## Arquitectura
 
 ```
-ESP32-S3 (nodo detector) ── HTTP POST JSON ──▶ API (FastAPI) ──▶ CSV + base de datos
-                           /api/ventanas
-                           /api/eventos
-                           /api/latido
+ESP32-S3 (nodo: nRF24 + sniffer) ── UART ──▶ ESP32 devkit (pasarela WiFi)
+                                               │ HTTP POST JSON
+                                               ▼
+                         API FastAPI (Ubuntu WSL, puerto 8000) ──▶ CSV (datos/) + PostgreSQL
+                           /api/ventanas  /api/eventos  /api/latido
+                           /  (página en vivo)   /api/resumen   /docs
 ```
 
-La ESP32 devkit queda opcional como segundo cliente de pruebas.
+El S3 no puede escuchar en modo promiscuo saltando de canal y a la vez estar conectado al router; por eso el devkit hace de pasarela.
+
+## Cómo encender el servidor (Ubuntu en WSL)
+
+Desde Ubuntu, en `/mnt/c/Users/juanc/Desktop/IAoT/practica-1/servidor`:
+
+1. Una sola vez: `bash preparar_ubuntu.sh` (instala PostgreSQL y las librerías, crea la base `iaot` y el archivo `.env`).
+2. Cada vez: `bash arrancar.sh`. Muestra la IP del PC y la dirección de la página.
+3. Sin placas: `python3 simular_nodo.py` repite una grabación real contra el servidor.
+
+Requisito de Windows (ya hecho): WSL en modo `mirrored` y regla de firewall Hyper-V para el puerto 8000.
 
 ## Parte 1 — Local (Ubuntu)
 
-- [ ] Aplicación web que reciba y valide ventanas, eventos y latidos.
-- [ ] Almacenar cada registro en CSV (`datos/`) y en base de datos.
+- [x] Aplicación web que reciba y valide ventanas, eventos y latidos (`servidor/app.py`).
+- [x] Almacenar cada registro en CSV (`datos/`) y en PostgreSQL (probado con el simulador).
 - [ ] Firmware cliente que envíe datos al servidor (`esp32-cliente/`).
 - [ ] Verificar en el CSV y en la base que los datos medidos llegan completos.
 

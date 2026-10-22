@@ -4,6 +4,8 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Decididas
 
+- **2026-10-21 — Servidor de la Práctica 1: FastAPI + PostgreSQL desde el inicio** (sin pasar por SQLite), en Ubuntu WSL con red *mirrored*. Cada registro se guarda también en CSV. Protocolo ESP32 → servidor: HTTP POST con JSON (MQTT queda como mejora opcional). Alerta del servidor con regla provisional: hay tramas DJI o el nivel promedio de la banda 2423–2456 MHz supera `UMBRAL_BANDA` (2,5). En la grabación de fondo el nivel llegó como máximo a ~1,9, sin falsas alarmas; falta calibrarlo con grabaciones del dron. Ojo: el router de la casa está en el canal 8 (≈2437–2457 MHz), dentro de esa banda.
+- **2026-10-21 — Ruta ESP32 → PC probada:** el devkit mandó latidos cada 5 s a la IP del PC (192.168.40.17) y llegaron todos.
 - **2026-10-21 — Devkit conectado a VICTORIA (prueba superada):** el ESP32 devkit (COM10, chip CP210x) se conecta en 2,4 GHz, canal 8, señal estable entre −58 y −65 dBm, IP 192.168.40.42 en la red 192.168.40.x (router 192.168.40.1). Para subirle programas hay que mantener BOOT durante "Connecting...". Confirma que el router de la casa en 2,4 GHz está en el canal 8.
 - **2026-10-21 — Práctica 1 con dos placas (nodo + pasarela):** el ESP32-S3 escucha (nRF24 + sniffer con salto de canales) y pasa el resumen por cable (UART) al ESP32 devkit, que se conecta al WiFi "VICTORIA" (el router emite el mismo nombre en 2,4 y 5 GHz; el ESP32 usa 2,4) y envía al servidor en Ubuntu (WSL).
 - **2026-10-20 — Clases para entrenar: `fondo`, `celular-video`, `bluetooth` y `dron-control` (siempre en 2,4 GHz).** El modo solo celular del Neo 2 no se detecta (probablemente usa 5 GHz) y se reporta como límite comprobado. Las capturas se graban con `captura-datos/Capturar.bat` y el firmware `nodo_captura`.
@@ -22,9 +24,6 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 - **Nodo sensor + pasarela:** el ESP32-S3 solo escucha y detecta; le pasa los resultados por UART al ESP32 devkit, que está conectado al WiFi y los envía al servidor. Motivo: el S3 no puede estar en modo promiscuo saltando de canal y conectado al router a la vez.
 - **Ubuntu local en WSL2** con red en modo *mirrored* para que el ESP32 alcance el servidor. Alternativa: máquina virtual con Ubuntu en red puente.
 - **Base de datos en Azure como PostgreSQL Flexible Server** (B1MS, acceso privado en subred delegada). Motivo: entra en los servicios gratis de Azure for Students y evita una segunda VM en la subred privada.
-- **Framework del servidor (Práctica 1):** FastAPI (Python), por coherencia con el pipeline de ML. Alternativas permitidas por el enunciado: Flask, Django, Node, PHP, Java.
-- **Base de datos:** PostgreSQL en ambos entornos, para que el paso local → Azure (BD en subred privada) no cambie el código. SQLite solo como atajo de arranque.
-- **Protocolo ESP32 → servidor:** HTTP POST con JSON. MQTT queda como mejora opcional.
 
 ## Pendientes de definir
 
