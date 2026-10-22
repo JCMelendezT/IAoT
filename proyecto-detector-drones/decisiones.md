@@ -4,6 +4,7 @@ Una entrada por decisión, la más reciente arriba. Formato: fecha, decisión, m
 
 ## Decididas
 
+- **2026-10-21 — Devkit conectado a VICTORIA (prueba superada):** el ESP32 devkit (COM10, chip CP210x) se conecta en 2,4 GHz, canal 8, señal estable entre −58 y −65 dBm, IP 192.168.40.42 en la red 192.168.40.x (router 192.168.40.1). Para subirle programas hay que mantener BOOT durante "Connecting...". Confirma que el router de la casa en 2,4 GHz está en el canal 8.
 - **2026-10-21 — Práctica 1 con dos placas (nodo + pasarela):** el ESP32-S3 escucha (nRF24 + sniffer con salto de canales) y pasa el resumen por cable (UART) al ESP32 devkit, que se conecta al WiFi "VICTORIA" (el router emite el mismo nombre en 2,4 y 5 GHz; el ESP32 usa 2,4) y envía al servidor en Ubuntu (WSL).
 - **2026-10-20 — Clases para entrenar: `fondo`, `celular-video`, `bluetooth` y `dron-control` (siempre en 2,4 GHz).** El modo solo celular del Neo 2 no se detecta (probablemente usa 5 GHz) y se reporta como límite comprobado. Las capturas se graban con `captura-datos/Capturar.bat` y el firmware `nodo_captura`.
 - **2026-10-20 — Hallazgo del sniffer WiFi:** con el Neo 2 usando el control en 2,4 GHz no aparece ninguna MAC de DJI (su enlace no es WiFi estándar), pero el ESP32 decodifica un 64 % menos de tramas WiFi y ve un 67 % menos de aparatos mientras el dron está encendido. Esa caída es un rasgo útil para el modelo WiFi. Falta probar el modo solo celular, donde el dron sí debería usar WiFi.
