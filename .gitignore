@@ -38,3 +38,6 @@ practica-1/datos/*.sqlite
 Thumbs.db
 .vscode/
 .idea/
+
+# Datos que genera el servidor de la Practica 1
+practica-1/datos/*.csv
