@@ -52,9 +52,9 @@ Requisito de Windows (ya hecho): WSL en modo `mirrored` y regla de firewall Hype
 El profesor autorizó cualquier proveedor; se usa Azure for Students. Scripts y pasos en [`nube/`](nube/README.md) (listos, aún no ejecutados); diagrama en [`arquitectura.md`](arquitectura.md#2-en-la-nube-azure). Cuidados de costo en `../PLAN.md`, Fase 3.
 
 
-- [ ] Máquina virtual Ubuntu (B1s) con la aplicación en la subred **pública** `app`, con **IP pública estática** (equivale a la IP elástica).
-- [ ] PostgreSQL Flexible Server (B1MS) con acceso privado en la subred **privada** `db`.
-- [ ] NSG (grupos de seguridad): solo el puerto de la aplicación abierto a internet, SSH solo desde tu IP, y el 5432 de la base solo desde la subred `app`.
+- [x] Máquina virtual Ubuntu (B2ats_v2) con la aplicación en la subred **pública** `app`, con **IP pública estática** (equivale a la IP elástica).
+- [x] PostgreSQL Flexible Server (B1MS) con acceso privado en la subred **privada** `db`.
+- [x] NSG (grupos de seguridad): solo el puerto de la aplicación abierto a internet, SSH solo desde tu IP, y el 5432 de la base solo desde la subred `app`.
 - [ ] Presupuesto con alerta en Cost Management.
 - [ ] Repetir la prueba del nodo contra la IP pública estática.
 
