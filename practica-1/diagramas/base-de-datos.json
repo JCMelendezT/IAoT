@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "erd",
+  "meta": {
+    "title": "Práctica 1 · base de datos",
+    "locale": "es",
+    "output": "practica-1/diagramas/base-de-datos.html",
+    "quality_profile": "showcase"
+  },
+  "layout": { "mode": "grid", "gapX": 64, "gapY": 40 },
+  "entities": [
+    {
+      "id": "latidos",
+      "label": "latidos",
+      "sublabel": "cada 5 s",
+      "tag": "telemetría",
+      "row": 0,
+      "col": 0,
+      "width": 210,
+      "attributes": [
+        { "name": "id", "type": "bigserial", "key": "pk" },
+        { "name": "recibido_en", "type": "timestamptz" },
+        { "name": "ip_origen", "type": "text" },
+        { "name": "nodo", "type": "text" },
+        { "name": "contador", "type": "bigint" },
+        { "name": "ms", "type": "bigint" },
+        { "name": "rssi", "type": "int" }
+      ]
+    },
+    {
+      "id": "ventanas",
+      "label": "ventanas",
+      "sublabel": "cada 2 s",
+      "tag": "telemetría",
+      "row": 0,
+      "col": 1,
+      "width": 250,
+      "attributes": [
+        { "name": "id", "type": "bigserial", "key": "pk" },
+        { "name": "recibido_en", "type": "timestamptz" },
+        { "name": "ip_origen", "type": "text" },
+        { "name": "nodo", "type": "text" },
+        { "name": "ms", "type": "bigint" },
+        { "name": "ventana", "type": "bigint" },
+        { "name": "canal", "type": "int" },
+        { "name": "tramas", "type": "int" },
+        { "name": "aparatos", "type": "int" },
+        { "name": "mgmt", "type": "int" },
+        { "name": "datos", "type": "int" },
+        { "name": "tam_prom", "type": "real" },
+        { "name": "rssi_prom", "type": "real" },
+        { "name": "rssi_max", "type": "int" },
+        { "name": "tramas_debiles", "type": "int" },
+        { "name": "aparatos_fuertes", "type": "int" },
+        { "name": "tramas_dji", "type": "int" },
+        { "name": "rssi_max_dji", "type": "int" },
+        { "name": "espectro", "type": "text" },
+        { "name": "nivel_banda_dron", "type": "real" },
+        { "name": "alerta", "type": "boolean" },
+        { "name": "motivo_alerta", "type": "text" }
+      ]
+    },
+    {
+      "id": "eventos",
+      "label": "eventos",
+      "sublabel": "inicio y fin de alerta",
+      "tag": "telemetría",
+      "row": 0,
+      "col": 2,
+      "width": 230,
+      "attributes": [
+        { "name": "id", "type": "bigserial", "key": "pk" },
+        { "name": "recibido_en", "type": "timestamptz" },
+        { "name": "ip_origen", "type": "text" },
+        { "name": "nodo", "type": "text" },
+        { "name": "ms", "type": "bigint" },
+        { "name": "tipo", "type": "text" },
+        { "name": "clase", "type": "text" },
+        { "name": "probabilidad", "type": "real" },
+        { "name": "detalle", "type": "text" }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Cómo se cruzan",
+      "items": [
+        "No hay claves foráneas: las tres tablas son independientes",
+        "Se cruzan por nodo y por la hora de llegada, recibido_en",
+        "El mismo esquema.sql sirve en local y en Azure"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Valores especiales",
+      "items": [
+        "rssi vacío = placa conectada por cable",
+        "canal 0 = la placa está saltando entre canales",
+        "espectro = 126 dígitos de 0 a 8, uno por canal",
+        "tipo = alerta_local o fin_alerta"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "También en CSV",
+      "items": [
+        "Cada fila se guarda con las mismas columnas en datos/latidos.csv",
+        "Lo mismo en datos/ventanas.csv y datos/eventos.csv",
+        "Las capturas crudas no se versionan"
+      ]
+    }
+  ]
+}

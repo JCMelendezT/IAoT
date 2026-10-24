@@ -6,6 +6,8 @@ En las dos versiones las placas son las mismas: el **ESP32-S3** escucha y decide
 
 ## 1. En local (funcionando)
 
+📄 **Versión interactiva (Archify):** [arquitectura local](diagramas/arquitectura-local.html)
+
 ```mermaid
 flowchart LR
     subgraph casa["Casa · WiFi 2,4 GHz · red 192.168.40.0/24"]
@@ -46,6 +48,8 @@ flowchart LR
 | `GET /`, `GET /api/resumen` | navegador | Página en vivo |
 
 ## 2. En la nube (Azure)
+
+📄 **Versión interactiva (Archify):** [arquitectura en Azure](diagramas/arquitectura-nube.html)
 
 ```mermaid
 flowchart LR
@@ -88,6 +92,8 @@ flowchart LR
 Scripts para crearlo: [`nube/`](nube/README.md).
 
 ## 3. Base de datos
+
+📄 **Versión interactiva (Archify):** [base de datos](diagramas/base-de-datos.html)
 
 Las tres tablas son independientes; se cruzan por `nodo` y por la hora de llegada. El mismo `esquema.sql` sirve en local y en Azure.
 
