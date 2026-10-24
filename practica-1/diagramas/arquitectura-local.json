@@ -8,19 +8,19 @@
     "quality_profile": "showcase"
   },
   "components": [
-    { "id": "s3", "type": "backend", "label": "ESP32-S3 · nodo", "sublabel": "nRF24 + sniffer + regla local", "pos": [40, 300], "size": [176, 72] },
-    { "id": "dk", "type": "backend", "label": "ESP32 devkit · pasarela", "sublabel": "192.168.40.42 · pasarela WiFi", "pos": [420, 300], "size": [160, 72] },
-    { "id": "router", "type": "messagebus", "label": "Router WiFi", "sublabel": "canal 8", "pos": [790, 300], "size": [140, 72] },
-    { "id": "fw", "type": "security", "label": "Firewall Hyper-V", "sublabel": "regla puerto 8000", "pos": [1060, 300], "size": [150, 72] },
-    { "id": "api", "type": "backend", "label": "FastAPI · app.py", "sublabel": "puerto 8000", "pos": [1240, 300], "size": [160, 72] },
-    { "id": "nav", "type": "frontend", "label": "Navegador", "sublabel": "localhost:8000", "pos": [1245, 110], "size": [150, 64] },
-    { "id": "pg", "type": "database", "label": "PostgreSQL", "sublabel": "base iaot", "pos": [1180, 455], "size": [130, 64] },
-    { "id": "csv", "type": "database", "label": "CSV", "sublabel": "practica-1/datos", "pos": [1330, 455], "size": [150, 64] }
+    { "id": "s3", "type": "backend", "label": "ESP32-S3 · nodo", "sublabel": "nRF24 + sniffer + regla local", "pos": [48, 300], "size": [176, 72] },
+    { "id": "dk", "type": "backend", "label": "ESP32 devkit · pasarela", "sublabel": "192.168.40.42 · pasarela WiFi", "pos": [428, 300], "size": [160, 72] },
+    { "id": "router", "type": "messagebus", "label": "Router WiFi", "sublabel": "canal 8", "pos": [798, 300], "size": [140, 72] },
+    { "id": "fw", "type": "security", "label": "Firewall Hyper-V", "sublabel": "regla puerto 8000", "pos": [1068, 300], "size": [150, 72] },
+    { "id": "api", "type": "backend", "label": "FastAPI · app.py", "sublabel": "puerto 8000", "pos": [1248, 300], "size": [160, 72] },
+    { "id": "nav", "type": "frontend", "label": "Navegador", "sublabel": "localhost:8000", "pos": [1253, 110], "size": [150, 64] },
+    { "id": "pg", "type": "database", "label": "PostgreSQL", "sublabel": "base iaot", "pos": [1188, 455], "size": [130, 64] },
+    { "id": "csv", "type": "database", "label": "CSV", "sublabel": "practica-1/datos", "pos": [1338, 455], "size": [150, 64] }
   ],
   "boundaries": [
-    { "kind": "region", "label": "Casa · WiFi 2,4 GHz · red 192.168.40.0/24", "wraps": ["s3", "dk", "router", "fw", "api", "nav", "pg", "csv"], "pad": 34 },
-    { "kind": "security-group", "label": "PC Windows 11 · 192.168.40.17", "wraps": ["fw", "api", "nav", "pg", "csv"], "pad": 20 },
-    { "kind": "region", "label": "Ubuntu en WSL2 · red mirrored", "wraps": ["api", "pg", "csv"], "pad": 10 }
+    { "kind": "region", "label": "Casa · WiFi 2,4 GHz · red 192.168.40.0/24", "wraps": ["s3", "dk", "router", "fw", "api", "nav", "pg", "csv"], "pad": 42 },
+    { "kind": "security-group", "label": "PC Windows 11 · 192.168.40.17", "wraps": ["fw", "api", "nav", "pg", "csv"], "pad": 30 },
+    { "kind": "region", "label": "Ubuntu en WSL2 · red mirrored", "wraps": ["api", "pg", "csv"], "pad": 24 }
   ],
   "connections": [
     { "from": "s3", "to": "dk", "label": "UART GPIO17→GPIO16 · 115200", "variant": "emphasis" },
