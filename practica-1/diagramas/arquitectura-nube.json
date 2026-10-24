@@ -13,9 +13,9 @@
     { "id": "nav", "type": "frontend", "label": "Navegador / celular", "pos": [660, 90], "size": [170, 64] },
     { "id": "ip", "type": "cloud", "label": "IP pública estática", "sublabel": "ip-iaot", "pos": [650, 240], "size": [170, 72] },
     { "id": "yo", "type": "external", "label": "Tu PC · administración", "pos": [660, 400], "size": [170, 64] },
-    { "id": "vm", "type": "backend", "label": "VM vm-iaot", "sublabel": "Ubuntu 24.04 · B1s · FastAPI", "pos": [880, 240], "size": [180, 80] },
+    { "id": "vm", "type": "backend", "label": "VM vm-iaot", "sublabel": "Ubuntu 24.04 · B2ats_v2 · FastAPI", "pos": [880, 240], "size": [180, 80] },
     { "id": "pgf", "type": "database", "label": "PostgreSQL Flexible Server", "sublabel": "B1MS · 32 GB · sin IP pública", "pos": [1130, 240], "size": [200, 84] },
-    { "id": "dns", "type": "cloud", "label": "Zona DNS privada", "sublabel": "pg-iaot.private.postgres.database.azure.com", "pos": [860, 70], "size": [240, 64] }
+    { "id": "dns", "type": "cloud", "label": "Zona DNS privada", "sublabel": "iaotdb.postgres.database.azure.com", "pos": [860, 70], "size": [240, 64] }
   ],
   "boundaries": [
     { "kind": "region", "label": "Casa · cualquier WiFi con internet", "wraps": ["s3", "dk"], "pad": 20 },

@@ -63,13 +63,13 @@ flowchart LR
         ip(("IP pública estática<br/>ip-iaot"))
         subgraph vnet["VNet vnet-iaot · 10.0.0.0/16"]
             subgraph app["Subred PÚBLICA app · 10.0.1.0/24 · NSG nsg-app"]
-                vm["VM vm-iaot · Ubuntu 24.04 · B1s<br/>FastAPI + CSV (systemd)"]
+                vm["VM vm-iaot · Ubuntu 24.04 · B2ats_v2<br/>FastAPI + CSV (systemd)"]
             end
             subgraph db["Subred PRIVADA db · 10.0.2.0/24 · NSG nsg-db"]
                 pgf[("PostgreSQL Flexible Server 16<br/>B1MS · 32 GB · sin IP pública")]
             end
         end
-        dns["Zona DNS privada<br/>pg-iaot.private.postgres.database.azure.com"]
+        dns["Zona DNS privada<br/>iaot-p1.private.postgres.database.azure.com"]
     end
 
     dk -- "HTTP POST JSON → :8000" --> ip
