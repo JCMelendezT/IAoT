@@ -1,0 +1,14 @@
+[Unit]
+Description=Servidor del detector de drones (Practica 1)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=__USUARIO__
+WorkingDirectory=/home/__USUARIO__/detector/servidor
+ExecStart=/home/__USUARIO__/venv/bin/python app.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

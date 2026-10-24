@@ -17,6 +17,8 @@ La alerta sigue decidiéndose en el borde, sin depender de la nube. El servidor 
 
 ## Arquitectura
 
+Diagramas completos (local, nube y base de datos): [`arquitectura.md`](arquitectura.md).
+
 ```
 ESP32-S3 (nodo: nRF24 + sniffer) ── UART ──▶ ESP32 devkit (pasarela WiFi)
                                                │ HTTP POST JSON
@@ -47,7 +49,7 @@ Requisito de Windows (ya hecho): WSL en modo `mirrored` y regla de firewall Hype
 
 ## Parte 2 — Nube (Azure)
 
-El profesor autorizó cualquier proveedor; se usa Azure for Students. Detalle y cuidados de costo en `../PLAN.md`, Fase 3.
+El profesor autorizó cualquier proveedor; se usa Azure for Students. Scripts y pasos en [`nube/`](nube/README.md) (listos, aún no ejecutados); diagrama en [`arquitectura.md`](arquitectura.md#2-en-la-nube-azure). Cuidados de costo en `../PLAN.md`, Fase 3.
 
 
 - [ ] Máquina virtual Ubuntu (B1s) con la aplicación en la subred **pública** `app`, con **IP pública estática** (equivale a la IP elástica).
