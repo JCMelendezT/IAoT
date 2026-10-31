@@ -76,6 +76,7 @@ psql "host=$HOST_BD dbname=iaot user=$ADMIN_BD connect_timeout=5"
 | `crear_infra.sh` | Crea red, subredes, NSG, IP, VM y PostgreSQL; deja `infra.env` (sin claves, no se sube) |
 | `desplegar_app.sh` | Copia `../servidor`, escribe el `.env` en la VM, instala y enciende el servicio |
 | `servidor-detector.service` | Servicio systemd: arranca el servidor y lo reinicia si se cae |
+| `agregar_mi_ip.sh` | Agrega tu IP publica actual a la regla SSH sin borrar las demas (`--ver`, `--quitar IP`) |
 | `borrar_infra.sh` | Borra todo el grupo `rg-iaot-p1` |
 | `pausar_infra.sh` | Apaga VM y PostgreSQL: deja de cobrar el cómputo (~0,5 USD/día en vez de ~1,3) |
 | `reanudar_infra.sh` | Vuelve a encenderlos y muestra la URL del servidor |
