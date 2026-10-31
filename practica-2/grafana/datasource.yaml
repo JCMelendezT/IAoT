@@ -1,0 +1,17 @@
+# Conexion de Grafana con InfluxDB (va en /etc/grafana/provisioning/datasources/)
+# INFLUX_TOKEN e INFLUX_URL salen de /etc/default/grafana-server (no se suben a GitHub).
+apiVersion: 1
+datasources:
+  - name: InfluxDB-detector
+    uid: influx-detector
+    type: influxdb
+    access: proxy
+    url: ${INFLUX_URL}
+    isDefault: true
+    editable: false
+    jsonData:
+      version: Flux
+      organization: uao
+      defaultBucket: detector
+    secureJsonData:
+      token: ${INFLUX_TOKEN}

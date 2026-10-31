@@ -1,0 +1,88 @@
+# Reglas de alerta del detector (va en /etc/grafana/provisioning/alerting/)
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: detector
+    folder: Detector
+    interval: 30s
+    rules:
+      # 1) La banda donde transmiten los drones (2423-2456 MHz) se llena
+      - uid: posible-dron
+        title: Posible dron (banda 2423-2456 MHz)
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severidad: alta
+        annotations:
+          summary: "Posible dron cerca del nodo {{ $labels.nodo }}"
+          description: "Nivel en la banda del dron: {{ $values.B }} (umbral 2.5) en el ultimo minuto."
+        data:
+          - refId: A
+            datasourceUid: influx-detector
+            relativeTimeRange: { from: 60, to: 0 }
+            model:
+              refId: A
+              query: |
+                from(bucket: "detector")
+                  |> range(start: -1m)
+                  |> filter(fn: (r) => r._measurement == "ventanas" and r._field == "nivel_banda_dron")
+                  |> group(columns: ["nodo"])
+                  |> max()
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: max
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [2.5] }
+
+      # 2) Una placa deja de reportar (conexion estable)
+      - uid: placa-sin-latidos
+        title: Placa sin latidos
+        condition: C
+        for: 1m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severidad: media
+        annotations:
+          summary: "No llegan latidos de las placas"
+          description: "En los ultimos 2 minutos llegaron {{ $values.B }} latidos de {{ $labels.nodo }}."
+        data:
+          - refId: A
+            datasourceUid: influx-detector
+            relativeTimeRange: { from: 120, to: 0 }
+            model:
+              refId: A
+              query: |
+                from(bucket: "detector")
+                  |> range(start: -2m)
+                  |> filter(fn: (r) => r._measurement == "latidos" and r._field == "contador")
+                  |> group(columns: ["nodo"])
+                  |> count()
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }

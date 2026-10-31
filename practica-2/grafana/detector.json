@@ -1,0 +1,380 @@
+{
+  "uid": "detector-drones",
+  "title": "Detector de drones · Práctica 2",
+  "tags": [
+    "iaot",
+    "mqtt"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Alertas en la última hora",
+      "description": "Ventanas con posible dron en los últimos 60 minutos",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-detector"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-detector"
+          },
+          "query": "from(bucket: \"detector\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"ventanas\" and r._field == \"alerta\")\n  |> map(fn: (r) => ({r with _value: if r._value then 1 else 0}))\n  |> group()\n  |> sum()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Latidos en los últimos 2 min (por placa)",
+      "description": "Si una placa sale en rojo o desaparece, dejó de reportar",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-detector"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 10,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-detector"
+          },
+          "query": "from(bucket: \"detector\")\n  |> range(start: -2m)\n  |> filter(fn: (r) => r._measurement == \"latidos\" and r._field == \"contador\")\n  |> group(columns: [\"nodo\"])\n  |> count()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Nivel actual en la banda del dron",
+      "description": "Promedio 0-8 en 2423-2456 MHz; umbral 2.5",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-detector"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-detector"
+          },
+          "query": "from(bucket: \"detector\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"ventanas\" and r._field == \"nivel_banda_dron\")\n  |> last()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 2.5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Nivel en la banda del dron (2423–2456 MHz)",
+      "description": "Línea roja = umbral de alerta (2.5). Es la 'señal' del sensor, equivalente a la temperatura del enunciado.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-detector"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-detector"
+          },
+          "query": "from(bucket: \"detector\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ventanas\" and r._field == \"nivel_banda_dron\")\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 2.5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Aparatos y tramas WiFi",
+      "description": "Cuántos dispositivos y paquetes WiFi escucha el nodo",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-detector"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-detector"
+          },
+          "query": "from(bucket: \"detector\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ventanas\" and (r._field == \"aparatos\" or r._field == \"tramas\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Señal WiFi promedio y máxima",
+      "description": "Qué tan fuerte llegan las señales WiFi (más cerca de 0 = más fuerte)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-detector"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-detector"
+          },
+          "query": "from(bucket: \"detector\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ventanas\" and (r._field == \"rssi_prom\" or r._field == \"rssi_max\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dBm",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Eventos de la placa (inicio y fin de alerta)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-detector"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-detector"
+          },
+          "query": "from(bucket: \"detector\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"eventos\" and r._field == \"detalle\")\n  |> keep(columns: [\"_time\", \"nodo\", \"tipo\", \"_value\"])\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 20)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      }
+    }
+  ],
+  "editable": true
+}

@@ -6,6 +6,7 @@ Repositorio de la materia (Especialización en IA, UAO, 2026-2): práctica 1 y p
 - **Práctica 1:** servidor web para IoT, orientada al proyecto → `practica-1/`
 - **Arquitectura (diagramas):** `practica-1/arquitectura.md`
 - **Nube (Azure, parte 2):** `practica-1/nube/`
+- **Práctica 2:** broker MQTT, InfluxDB y Grafana, orientada al proyecto → `practica-2/` (diagrama en `practica-2/arquitectura.md`)
 - **Plan por fases:** `PLAN.md`
 - **Estado actual:** `00-indice.md`
 - **Contexto para agentes (OpenCode/Claude):** `AGENTS.md`

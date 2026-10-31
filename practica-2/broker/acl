@@ -1,0 +1,15 @@
+# Quien puede hacer que en el broker (va en /etc/mosquitto/acl)
+# readwrite = publicar y suscribirse, read = solo suscribirse, write = solo publicar
+
+# La placa (devkit) solo publica en el arbol del detector
+user esp32
+topic write detector1/#
+
+# El puente solo escucha
+user puente
+topic read detector1/#
+
+# Tu usuario para MQTT Explorer y pruebas: lee y escribe
+user juan
+topic readwrite detector1/#
+topic read $SYS/#
