@@ -12,4 +12,4 @@ az vm start -g "$GRUPO" -n vm-iaot -o none
 IP="$(az network public-ip show -g "$GRUPO" -n ip-iaot --query ipAddress -o tsv)"
 echo
 echo "Servidor: http://$IP:8000"
-echo "Si la pagina no responde: ssh juan@$IP 'sudo systemctl status servidor-iaot'"
+echo "Si la pagina no responde: ssh juan@$IP 'sudo systemctl status servidor-detector'"
