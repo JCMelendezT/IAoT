@@ -1,0 +1,23 @@
+# A donde llegan las alertas: Telegram (va en /etc/grafana/provisioning/alerting/)
+# TELEGRAM_TOKEN y TELEGRAM_CHAT_ID salen de /etc/default/grafana-server.
+# Solo se instala si diste esos datos a desplegar_p2.sh.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: telegram-detector
+    receivers:
+      - uid: telegram-detector
+        type: telegram
+        settings:
+          bottoken: ${TELEGRAM_TOKEN}
+          chatid: "${TELEGRAM_CHAT_ID}"
+        disableResolveMessage: false
+
+policies:
+  - orgId: 1
+    receiver: telegram-detector
+    group_by: ["alertname", "nodo"]
+    group_wait: 10s
+    group_interval: 1m
+    repeat_interval: 30m

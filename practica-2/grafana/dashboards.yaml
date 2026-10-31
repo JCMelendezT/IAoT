@@ -1,0 +1,10 @@
+# Le dice a Grafana donde estan los tableros (va en /etc/grafana/provisioning/dashboards/)
+apiVersion: 1
+providers:
+  - name: detector
+    folder: Detector
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/detector

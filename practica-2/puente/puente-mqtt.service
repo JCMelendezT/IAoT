@@ -1,0 +1,14 @@
+[Unit]
+Description=Puente MQTT -> InfluxDB + CSV (Practica 2, detector de drones)
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+User=__USUARIO__
+WorkingDirectory=/home/__USUARIO__/practica2/puente
+ExecStart=/home/__USUARIO__/venv-p2/bin/python puente_mqtt.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
