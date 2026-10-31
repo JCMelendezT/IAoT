@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Práctica 2 · MQTT, InfluxDB y Grafana en Azure",
+    "locale": "es",
+    "output": "practica-2/diagramas/arquitectura-p2.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "s3", "type": "backend", "label": "ESP32-S3 · nodo", "sublabel": "nRF24 + sniffer + regla local", "pos": [30, 250], "size": [176, 72] },
+    { "id": "dk", "type": "backend", "label": "ESP32 devkit · cliente MQTT", "sublabel": "PubSubClient · usuario esp32", "pos": [300, 250], "size": [190, 72] },
+    { "id": "ip", "type": "cloud", "label": "IP pública estática", "sublabel": "57.156.64.36", "pos": [600, 250], "size": [170, 72] },
+    { "id": "yo", "type": "external", "label": "Tu PC", "sublabel": "MQTT Explorer · navegador · SSH", "pos": [590, 430], "size": [190, 72] },
+    { "id": "broker", "type": "messagebus", "label": "Mosquitto · broker MQTT", "sublabel": ":1883 · usuario y clave · ACL", "pos": [880, 110], "size": [210, 72] },
+    { "id": "puente", "type": "backend", "label": "Puente MQTT → Influx + CSV", "sublabel": "puente_mqtt.py · systemd", "pos": [880, 250], "size": [210, 72] },
+    { "id": "grafana", "type": "frontend", "label": "Grafana", "sublabel": ":3000 · tablero + alertas", "pos": [880, 390], "size": [210, 72] },
+    { "id": "influx", "type": "database", "label": "InfluxDB 2 · vm-influx", "sublabel": "10.0.3.4:8086 · sin IP pública", "pos": [1340, 250], "size": [210, 84] },
+    { "id": "tg", "type": "external", "label": "Telegram", "sublabel": "notificaciones de alerta", "pos": [890, 540], "size": [190, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Casa · cualquier WiFi con internet", "wraps": ["s3", "dk"], "pad": 20 },
+    { "kind": "region", "label": "VNet vnet-iaot · 10.0.0.0/16 · rg-iaot-p1 · Chile Central", "wraps": ["ip", "broker", "puente", "grafana", "influx"], "pad": 66 },
+    { "kind": "security-group", "label": "Subred PÚBLICA app · 10.0.1.0/24 · nsg-app · VM vm-iaot", "wraps": ["ip", "broker", "puente", "grafana"], "pad": 12 },
+    { "kind": "security-group", "label": "Subred PRIVADA influx · 10.0.3.0/24 · nsg-influx", "wraps": ["influx"], "pad": 26 }
+  ],
+  "connections": [
+    { "from": "s3", "to": "dk", "label": "UART 115200", "variant": "emphasis" },
+    { "from": "dk", "to": "ip", "label": "MQTT :1883 · detector1/nodo-s3/…", "variant": "emphasis" },
+    { "from": "yo", "to": "ip", "label": "MQTT :1883 · Grafana :3000 · SSH :22", "variant": "security", "labelDx": 98 },
+    { "from": "ip", "to": "broker", "label": "1883" },
+    { "from": "ip", "to": "grafana", "label": "3000 · solo tus IPs", "variant": "security" },
+    { "from": "broker", "to": "puente", "label": "suscrito a detector1/#" },
+    { "from": "puente", "to": "influx", "label": "escribe :8086", "variant": "security" },
+    { "from": "grafana", "to": "influx", "label": "consulta Flux :8086", "variant": "security", "toSide": "left", "labelDx": -57 },
+    { "from": "grafana", "to": "tg", "label": "alertas", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "Topics MQTT",
+      "items": [
+        "detector1/nodo-s3/nivel_banda: energía en 2423–2456 MHz (la «temperatura»)",
+        "detector1/nodo-s3/aparatos: aparatos WiFi vistos (la «humedad»)",
+        "detector1/nodo-s3/ventana, latido y evento: JSON completos",
+        "detector1/pasarela-1/estado: conectado o desconectado (LWT)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Seguridad",
+      "items": [
+        "Broker sin anónimos: usuarios esp32, puente y juan, cada uno con su ACL",
+        "nsg-app: 1883 desde Internet; 3000 y 22 solo desde tus IPs",
+        "nsg-influx: 8086 y 22 solo desde 10.0.1.0/24; el resto negado",
+        "InfluxDB no tiene IP pública: desde internet no existe"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Dónde queda cada dato",
+      "items": [
+        "InfluxDB, bucket detector: mediciones ventanas, latidos y eventos",
+        "CSV en vm-iaot: ~/practica2/datos/*.csv",
+        "Grafana alerta si la banda pasa de 2.5 o no llegan latidos"
+      ]
+    }
+  ]
+}

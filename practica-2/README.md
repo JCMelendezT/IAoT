@@ -4,6 +4,8 @@ Enunciado: `Actividades/Actividad_2_2026-2.pdf`. Igual que la Práctica 1, va or
 
 Diagrama, topics, usuarios y reglas: [`arquitectura.md`](arquitectura.md).
 
+Diagrama Archify: [diagramas/arquitectura-p2.html](diagramas/arquitectura-p2.html)
+
 > Estado: código y scripts listos y probados en local (broker con usuarios y ACL, puente, simulador). **Falta correrlos en Azure** y subir el firmware al devkit.
 
 ## Qué hay en cada carpeta
