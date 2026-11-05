@@ -1,14 +1,16 @@
 # Índice y estado
 
-Última actualización: 2026-10-19
+Última actualización: 2026-11-05
 
 ## Entregas
 
 | Entrega | Fecha | Estado |
 | --- | --- | --- |
-| Práctica 1, parte 1 (servidor local Ubuntu + ESP32 + CSV y BD) | Sin fecha fija | Sin iniciar |
-| Práctica 1, parte 2 (Azure: subred pública/privada, IP pública estática, NSG) | Sin fecha fija | Sin iniciar |
-| Práctica 1: repositorio GitHub + presentación | Sin fecha fija | Sin iniciar |
+| Práctica 1, parte 1 (servidor local Ubuntu + ESP32 + CSV y BD) | — | Hecha |
+| Práctica 1, parte 2 (Azure: subred pública/privada, IP pública estática, NSG) | 2026-10-30 | Sustentada |
+| Práctica 2 (MQTT + InfluxDB + Grafana en Azure) | 2026-10-31 | Presentada |
+| Práctica 3 (AWS serverless: IoT Core, DynamoDB, Lambda, S3) | 2026-11-05 | Desplegada con Terraform y probada (simulador y dashboard); falta la presentación |
+| Terraform (`terraform/azure` y `terraform/aws`) | 2026-11-05 | AWS aplicado y verificado; Azure escrito, sin aplicar |
 | Proyecto final: detector de drones RF | Sin fecha fija | nRF24 conectado y confirmado; cascada funcionando; Neo 2 detectado a ojo en 2,4 GHz |
 
 ## Plan del proyecto final (del doc de diseño)

@@ -1,15 +1,21 @@
 # IAoT — Inteligencia Artificial aplicada al IoT
 
-Repositorio de la materia (Especialización en IA, UAO, 2026-2): práctica 1 y proyecto final.
+Repositorio de la materia (Especialización en IA, UAO, 2026-2): proyecto final y tres prácticas, todas orientadas al **detector de drones por radiofrecuencia** (ESP32-S3 + nRF24L01+ + sniffer WiFi, 2,4 GHz).
 
-- **Proyecto final:** detector de drones por radiofrecuencia con IA en ESP32-S3 → `proyecto-detector-drones/`
-- **Práctica 1:** servidor web para IoT, orientada al proyecto → `practica-1/`
-- **Arquitectura (diagramas):** `practica-1/arquitectura.md`
-- **Nube (Azure, parte 2):** `practica-1/nube/`
-- **Práctica 2:** broker MQTT, InfluxDB y Grafana, orientada al proyecto → `practica-2/` (diagrama en `practica-2/arquitectura.md`)
-- **Plan por fases:** `PLAN.md`
-- **Estado actual:** `00-indice.md`
-- **Contexto para agentes (OpenCode/Claude):** `AGENTS.md`
+| Qué | Dónde | Nube |
+| --- | --- | --- |
+| **Proyecto final:** detector de drones con IA en el borde | [`proyecto-detector-drones/`](proyecto-detector-drones/) | — |
+| **Práctica 1:** servidor web (FastAPI + PostgreSQL + CSV) | [`practica-1/`](practica-1/) · nube en [`practica-1/nube/`](practica-1/nube/) | Azure |
+| **Práctica 2:** broker MQTT, InfluxDB y Grafana con alertas | [`practica-2/`](practica-2/) · arquitectura en [`arquitectura.md`](practica-2/arquitectura.md) | Azure |
+| **Práctica 3:** arquitectura serverless (IoT Core, DynamoDB, Lambda, S3) | [`practica-3/`](practica-3/) | AWS |
+| **Infraestructura como código** (Terraform) | [`terraform/`](terraform/) (`azure/` y `aws/`) | Azure y AWS |
+| Firmware de laboratorio de las placas | [`Lab_ESP32/`](Lab_ESP32/) | — |
+
+Otros documentos: plan por fases [`PLAN.md`](PLAN.md) · estado actual [`00-indice.md`](00-indice.md) · enunciados en [`Actividades/`](Actividades/) · contexto para agentes (OpenCode/Claude) [`AGENTS.md`](AGENTS.md).
+
+## Qué secretos NO están en el repositorio
+
+Git ignora: `secrets.h`, `certs.h`, `.env`, `*.env`, `*.pem`, `terraform.tfvars` y el estado de Terraform. En cada carpeta hay un `.example` o un README que explica cómo generarlos (los scripts y Terraform los crean al desplegar).
 
 ## Cómo replicarlo
 

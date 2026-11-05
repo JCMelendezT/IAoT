@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detector de drones · Dashboard IoT</title>
+<style>
+  :root {
+    --fondo: #0f1419; --panel: #172029; --borde: #263341; --texto: #e6edf3; --suave: #8b9bab;
+    --acento: #4cc2ff; --ok: #3ddc97; --alerta: #ff5d5d; --aviso: #ffb454;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --fondo: #f3f6f9; --panel: #ffffff; --borde: #dbe3ea; --texto: #17212b; --suave: #5d6b79;
+            --acento: #0a7cc4; --ok: #14935f; --alerta: #d12f2f; --aviso: #b87400; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+           padding: 16px 20px; border-bottom: 1px solid var(--borde); }
+  h1 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+  h1 small { display: block; font-size: 12px; font-weight: 400; color: var(--suave); }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px 16px 40px; display: grid; gap: 14px; }
+  .fila { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .panel { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 14px 16px; }
+  .panel h2 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--suave);
+              text-transform: uppercase; letter-spacing: .6px; }
+  .valor { font-size: 34px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .valor small { font-size: 14px; font-weight: 500; color: var(--suave); margin-left: 4px; }
+  .nota { font-size: 12px; color: var(--suave); margin-top: 4px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px;
+          font-size: 12px; font-weight: 600; border: 1px solid var(--borde); }
+  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--suave); }
+  .pill.ok { color: var(--ok); } .pill.ok::before { background: var(--ok); }
+  .pill.mal { color: var(--alerta); } .pill.mal::before { background: var(--alerta); }
+  #banner { display: none; background: color-mix(in srgb, var(--alerta) 18%, var(--panel));
+            border-color: var(--alerta); font-weight: 600; }
+  #banner.ver { display: block; }
+  .controles { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button, select { font: inherit; color: var(--texto); background: var(--fondo); border: 1px solid var(--borde);
+                   border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--acento); }
+  button.principal { background: var(--acento); color: #04202f; border-color: var(--acento); font-weight: 650; }
+  .interruptor { display: flex; align-items: center; gap: 14px; }
+  .interruptor button { min-width: 120px; font-weight: 650; }
+  .interruptor button.on { background: var(--ok); border-color: var(--ok); color: #04210f; }
+  .grafica { position: relative; height: 320px; }
+  ul.eventos { list-style: none; margin: 0; padding: 0; max-height: 170px; overflow: auto; font-size: 13px; }
+  ul.eventos li { padding: 5px 0; border-bottom: 1px solid var(--borde); display: flex; gap: 10px; }
+  ul.eventos li time { color: var(--suave); white-space: nowrap; }
+  #acceso { position: fixed; inset: 0; background: var(--fondo); display: none; place-items: center; z-index: 5; padding: 16px; }
+  #acceso.ver { display: grid; }
+  #acceso form { background: var(--panel); border: 1px solid var(--borde); border-radius: 14px; padding: 24px;
+                 width: min(380px, 100%); display: grid; gap: 12px; }
+  #acceso input { font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--borde);
+                  background: var(--fondo); color: var(--texto); }
+  #msgAcceso { color: var(--alerta); font-size: 13px; min-height: 18px; }
+  .oculto { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="acceso">
+  <form id="formAcceso">
+    <h1>Detector de drones<small>Ingresa la clave del dashboard (te la da Terraform: <code>terraform output -raw token_api</code>)</small></h1>
+    <input id="inToken" type="password" placeholder="Clave" autocomplete="current-password" required>
+    <button class="principal" type="submit">Entrar</button>
+    <div id="msgAcceso"></div>
+  </form>
+</div>
+
+<header>
+  <h1>Detector de drones · 2,4 GHz<small>ESP32-S3 + nRF24 → AWS IoT Core → DynamoDB</small></h1>
+  <div class="controles">
+    <span id="estadoPlaca" class="pill mal">sin datos</span>
+    <select id="rango" aria-label="Rango de tiempo">
+      <option value="15">Últimos 15 min</option>
+      <option value="60" selected>Última hora</option>
+      <option value="360">Últimas 6 horas</option>
+      <option value="1440">Últimas 24 horas</option>
+    </select>
+    <button id="btnSalir" title="Cambiar clave">Salir</button>
+  </div>
+</header>
+
+<main>
+  <div id="banner" class="panel">⚠ Posible dron: la energía en la banda 2423–2456 MHz superó el umbral.</div>
+
+  <div class="fila">
+    <section class="panel"><h2>Nivel banda dron</h2><div class="valor" id="kNivel">–</div><div class="nota">promedio 0–8 · umbral 2,5</div></section>
+    <section class="panel"><h2>Aparatos WiFi</h2><div class="valor" id="kAparatos">–</div><div class="nota">vistos en la ventana</div></section>
+    <section class="panel"><h2>Señal máx.</h2><div class="valor" id="kRssi">–<small>dBm</small></div><div class="nota">trama más fuerte</div></section>
+    <section class="panel"><h2>Última lectura</h2><div class="valor" id="kHace" style="font-size:24px">–</div><div class="nota" id="kHoraNota">&nbsp;</div></section>
+  </div>
+
+  <section class="panel">
+    <h2>Energía en la banda del dron y aparatos</h2>
+    <div class="grafica"><canvas id="grafica"></canvas></div>
+  </section>
+
+  <div class="fila" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+    <section class="panel">
+      <h2>Actuador (LED / sirena del devkit)</h2>
+      <div class="interruptor">
+        <button id="btnActuador">…</button>
+        <div>
+          <div id="actEstado" style="font-weight:650">Consultando…</div>
+          <div class="nota" id="actNota">El comando viaja: dashboard → API → AWS IoT → placa</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Descargar datos</h2>
+      <div class="controles">
+        <select id="horasCsv" aria-label="Horas a descargar">
+          <option value="1">Última hora</option>
+          <option value="6">Últimas 6 h</option>
+          <option value="24" selected>Últimas 24 h</option>
+          <option value="48">Últimas 48 h</option>
+        </select>
+        <button id="btnCsv" class="principal">Descargar CSV</button>
+      </div>
+      <div class="nota" id="csvNota">Incluye lecturas y eventos guardados en DynamoDB.</div>
+    </section>
+
+    <section class="panel">
+      <h2>Eventos del nodo</h2>
+      <ul class="eventos" id="eventos"><li>Sin eventos en este rango.</li></ul>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  const API = (window.CONFIG && window.CONFIG.API_URL) || "";
+  const UMBRAL = 2.5;
+  const $ = (id) => document.getElementById(id);
+  let token = "";
+  let grafica = null;
+  let pendiente = null;          // orden enviada al actuador que aun no se confirma
+  let encendido = false;
+  let temporizador = null;
+
+  const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const leer = (k) => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
+  const quitar = (k) => { try { localStorage.removeItem(k); } catch (e) {} };
+
+  async function api(ruta, opciones) {
+    const r = await fetch(API + ruta, Object.assign({ headers: { "x-token": token, "content-type": "application/json" } }, opciones));
+    if (r.status === 401) { mostrarAcceso("Clave incorrecta"); throw new Error("401"); }
+    if (!r.ok) throw new Error((await r.text()) || r.status);
+    return r;
+  }
+
+  function mostrarAcceso(msg) {
+    clearInterval(temporizador);
+    quitar("token");
+    $("msgAcceso").textContent = msg || "";
+    $("acceso").classList.add("ver");
+  }
+
+  function hora(ms) { return new Date(ms).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); }
+  function hace(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    if (s < 60) return s + " s";
+    if (s < 3600) return Math.floor(s / 60) + " min";
+    return Math.floor(s / 3600) + " h";
+  }
+
+  function crearGrafica() {
+    const estilo = getComputedStyle(document.documentElement);
+    const c = (v) => estilo.getPropertyValue(v).trim();
+    grafica = new Chart($("grafica"), {
+      type: "line",
+      data: { labels: [], datasets: [
+        { label: "Nivel banda dron", data: [], borderColor: c("--acento"), backgroundColor: c("--acento") + "33",
+          fill: true, tension: .25, pointRadius: 0, borderWidth: 2, yAxisID: "y" },
+        { label: "Umbral (2,5)", data: [], borderColor: c("--alerta"), borderDash: [6, 6], pointRadius: 0, borderWidth: 1.5, yAxisID: "y" },
+        { label: "Aparatos WiFi", data: [], borderColor: c("--aviso"), tension: .25, pointRadius: 0, borderWidth: 1.5, yAxisID: "y2" }
+      ] },
+      options: {
+        maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
+        scales: {
+          x: { ticks: { color: c("--suave"), maxTicksLimit: 8 }, grid: { color: c("--borde") } },
+          y: { min: 0, suggestedMax: 6, title: { display: true, text: "Nivel 0–8", color: c("--suave") },
+               ticks: { color: c("--suave") }, grid: { color: c("--borde") } },
+          y2: { position: "right", min: 0, title: { display: true, text: "Aparatos", color: c("--suave") },
+                ticks: { color: c("--suave"), precision: 0 }, grid: { drawOnChartArea: false } }
+        },
+        plugins: { legend: { labels: { color: c("--texto") } } }
+      }
+    });
+  }
+
+  function pintarActuador(act) {
+    if (act && act.estado) encendido = act.estado === "on";
+    if (pendiente && act && act.estado === pendiente) pendiente = null;
+    const b = $("btnActuador");
+    b.classList.toggle("on", encendido);
+    b.textContent = encendido ? "Apagar" : "Encender";
+    $("actEstado").textContent = pendiente ? "Enviando comando…" : (act ? "Actuador " + (encendido ? "ENCENDIDO" : "apagado") : "Sin reporte del actuador");
+    $("actNota").textContent = act && act.ts ? "Último reporte de la placa: " + hora(Number(act.ts)) : "La placa aún no ha reportado su estado.";
+  }
+
+  async function refrescar() {
+    try {
+      const minutos = $("rango").value;
+      const [rl, re] = await Promise.all([api("/lecturas?minutos=" + minutos), api("/estado")]);
+      const d = await rl.json(), e = await re.json();
+      const lect = d.lecturas || [];
+
+      grafica.data.labels = lect.map((x) => hora(Number(x.ts)));
+      grafica.data.datasets[0].data = lect.map((x) => x.nivel_banda);
+      grafica.data.datasets[1].data = lect.map(() => UMBRAL);
+      grafica.data.datasets[2].data = lect.map((x) => x.aparatos);
+      grafica.update();
+
+      const u = e.ultima_lectura;
+      if (u) {
+        const edad = e.ahora_ms - Number(u.ts);
+        const vivo = edad < 20000;
+        $("kNivel").textContent = Number(u.nivel_banda).toFixed(2);
+        $("kAparatos").textContent = u.aparatos;
+        $("kRssi").innerHTML = u.rssi_max + "<small>dBm</small>";
+        $("kHace").textContent = "hace " + hace(edad);
+        $("kHoraNota").textContent = hora(Number(u.ts));
+        $("estadoPlaca").textContent = vivo ? "placa en línea" : "placa sin reportar";
+        $("estadoPlaca").className = "pill " + (vivo ? "ok" : "mal");
+        $("banner").classList.toggle("ver", vivo && Number(u.nivel_banda) > UMBRAL);
+      } else {
+        $("estadoPlaca").textContent = "sin datos";
+        $("estadoPlaca").className = "pill mal";
+      }
+
+      pintarActuador(e.actuador);
+
+      const ev = (d.eventos || []).slice().reverse();
+      $("eventos").innerHTML = ev.length
+        ? ev.map((x) => "<li><time>" + hora(Number(x.ts)) + "</time><span>" + escapar(x.tipo || "") + " " + escapar(x.detalle || "") + "</span></li>").join("")
+        : "<li>Sin eventos en este rango.</li>";
+    } catch (err) {
+      if (String(err.message) !== "401") $("estadoPlaca").textContent = "error de conexión";
+    }
+  }
+
+  function escapar(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  async function alternarActuador() {
+    const orden = encendido ? "off" : "on";
+    pendiente = orden;
+    pintarActuador(null);
+    try {
+      await api("/actuador", { method: "POST", body: JSON.stringify({ estado: orden }) });
+      setTimeout(refrescar, 1200);
+    } catch (e) { pendiente = null; $("actEstado").textContent = "No se pudo enviar el comando"; }
+  }
+
+  async function descargarCsv() {
+    const nota = $("csvNota");
+    nota.textContent = "Generando…";
+    try {
+      const r = await api("/csv?horas=" + $("horasCsv").value);
+      const blob = await r.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "detector_" + new Date().toISOString().slice(0, 16).replace(/[:T]/g, "") + ".csv";
+      document.body.appendChild(a); a.click(); a.remove();
+      nota.textContent = "Descargado.";
+    } catch (e) { nota.textContent = "No se pudo descargar el CSV."; }
+  }
+
+  function iniciar() {
+    $("acceso").classList.remove("ver");
+    if (!grafica) crearGrafica();
+    refrescar();
+    clearInterval(temporizador);
+    temporizador = setInterval(refrescar, 5000);
+  }
+
+  $("formAcceso").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    token = $("inToken").value.trim();
+    try { await api("/estado"); guardar("token", token); iniciar(); } catch (e) { /* api ya mostro el aviso */ }
+  });
+  $("btnSalir").addEventListener("click", () => mostrarAcceso(""));
+  $("btnActuador").addEventListener("click", alternarActuador);
+  $("btnCsv").addEventListener("click", descargarCsv);
+  $("rango").addEventListener("change", refrescar);
+
+  token = leer("token");
+  if (!API) { $("acceso").classList.add("ver"); $("msgAcceso").textContent = "Falta config.js (lo sube Terraform)."; }
+  else if (token) iniciar();
+  else mostrarAcceso("");
+})();
+</script>
+</body>
+</html>

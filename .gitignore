@@ -42,3 +42,26 @@ Thumbs.db
 
 # Datos que genera el servidor de la Practica 1
 practica-1/datos/*.csv
+
+# Terraform (estado con claves y certificados; variables con tus IPs y claves)
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.auto.tfvars
+terraform/aws/.build/
+crash.log
+
+# Practica 3: certificados de AWS IoT generados por Terraform
+practica-3/certs/
+**/certs.h
+
+# Registros de revision de Archify (se versiona solo el diagrama .html/.json final)
+practica-2/diagramas/*.browser-check.json
+practica-2/diagramas/*.delivery.json
+practica-2/diagramas/*.finalize.json
+practica-2/diagramas/*.finalize-summary.json
+
+# Proyectos de prueba locales de ESP-IDF (solo scaffold y compilaciones)
+Proyecto AIoT/
+Lab_ESP32/firmware/smoke-test/
