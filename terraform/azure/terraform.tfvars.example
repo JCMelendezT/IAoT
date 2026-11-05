@@ -1,0 +1,6 @@
+# Copia este archivo como terraform.tfvars y llena tus datos (terraform.tfvars NO se sube a GitHub).
+# Tu IP:  curl -s https://api.ipify.org     (agrega /32)
+mis_ips = ["190.0.0.1/32", "190.0.0.2/32"]   # casa, cable, lugar frecuente...
+
+# La clave tambien puede ir por entorno:  export TF_VAR_clave_bd='...'
+clave_bd = "CambiaEstaClave123"
