@@ -46,7 +46,8 @@ CLASE_MODELO = {"fondo": "fondo", "bluetooth": "bluetooth", "celular-video": "ce
 
 
 def leer_grabacion(ruta):
-    """Devuelve (cabecera, filas_N, filas_W). filas_N = [(t, vector126)], filas_W = [(t, dict)]."""
+    """Devuelve (cabecera, filas_N, filas_W).
+    filas_N = [(ms del ESP32, vector126)], filas_W = [(t en el PC, dict con 'ms' del ESP32)]."""
     cab, filas_n, filas_w = {}, [], []
     with open(ruta, encoding="utf-8") as f:
         for linea in f:
@@ -63,8 +64,9 @@ def leer_grabacion(ruta):
                 continue
             if dato.startswith("N,"):
                 partes = dato.split(",", 2)
-                if len(partes) == 3 and len(partes[2]) == CANALES and partes[2].isdigit():
-                    filas_n.append((t, np.array([int(c) for c in partes[2]], dtype=float)))
+                if (len(partes) == 3 and partes[1].isdigit() and len(partes[2]) == CANALES
+                        and partes[2].isdigit()):
+                    filas_n.append((int(partes[1]), np.array([int(c) for c in partes[2]], dtype=float)))
             elif dato.startswith("W,"):
                 partes = dato.split(",")[1:]
                 if len(partes) == len(CAMPOS_W):
@@ -88,11 +90,14 @@ def rasgos_espectro(matriz):
 
 def procesar(ruta):
     cab, filas_n, filas_w = leer_grabacion(ruta)
-    tiempos_n = np.array([t for t, _ in filas_n])
+    # La ventana se arma con el reloj del propio ESP32 (ms), no con la hora del PC:
+    # entran las filas del nRF24 terminadas en los 2 s ANTES de la linea W, igual que
+    # en el firmware nodo_detector, que no puede ver filas que aun no han llegado.
+    ms_n = np.array([ms for ms, _ in filas_n])
     espectro = np.array([v for _, v in filas_n])
     salida = []
     for t, w in filas_w:
-        dentro = (tiempos_n > t - VENTANA_S) & (tiempos_n <= t)
+        dentro = (ms_n > w["ms"] - VENTANA_S * 1000) & (ms_n <= w["ms"])
         if dentro.sum() < 3:          # ventana sin espectro suficiente (al inicio)
             continue
         fila = {

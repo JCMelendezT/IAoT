@@ -8,13 +8,15 @@ Ademas se hace una prueba final: entrenar con el primer 70 % de cada grabacion y
 con el ultimo 30 %, dejando 10 s de separacion.
 
 Uso:  python entrenar.py        (antes: python rasgos.py)
-Sale: ../modelos/modelo_detector.h   -> para el firmware (Arduino)
+Sale: ../modelos/modelo_detector.h   -> para el firmware (se copia tambien a
+                                        Lab_ESP32/firmware/nodo_detector/)
       ../modelos/ficha_modelo.md     -> metricas
       ../resultados/matriz_confusion.png
 """
 
 import json
 import os
+import shutil
 from datetime import date
 
 import matplotlib
@@ -34,6 +36,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 ENTRADA = os.path.join(AQUI, "..", "captura-datos", "procesado", "ventanas.csv")
 CARPETA_MODELOS = os.path.join(AQUI, "..", "modelos")
 CARPETA_RESULTADOS = os.path.join(AQUI, "..", "resultados")
+CARPETA_FIRMWARE = os.path.join(AQUI, "..", "..", "Lab_ESP32", "firmware", "nodo_detector")
 CLASES = ["fondo", "bluetooth", "dron"]
 BLOQUES = 10                 # pliegues de la validacion por bloques de 1 minuto
 FRACCION_ENTRENO = 0.7
@@ -180,7 +183,10 @@ def main():
     os.makedirs(CARPETA_RESULTADOS, exist_ok=True)
     acc_cv, acc_ho = accuracy_score(y, pred_cv), accuracy_score(y[prueba], pred_ho)
     resumen = "Exactitud: {:.1%} (bloques de 1 min) y {:.1%} (ultimo 30 % de cada grabacion).".format(acc_cv, acc_ho)
-    exportar_c(final, rasgos, os.path.join(CARPETA_MODELOS, "modelo_detector.h"), resumen)
+    ruta_h = os.path.join(CARPETA_MODELOS, "modelo_detector.h")
+    exportar_c(final, rasgos, ruta_h, resumen)
+    if os.path.isdir(CARPETA_FIRMWARE):     # el sketch necesita su propia copia
+        shutil.copyfile(ruta_h, os.path.join(CARPETA_FIRMWARE, "modelo_detector.h"))
     dibujar_matriz(cm_cv, "Validacion por bloques de 1 min\n(exactitud {:.1%})".format(acc_cv),
                    os.path.join(CARPETA_RESULTADOS, "matriz_confusion.png"))
 

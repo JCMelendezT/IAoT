@@ -18,7 +18,7 @@ Generada por `ml/entrenar.py` el 2026-11-10.
 
 | Prueba | Exactitud | F1 promedio | Falsas alarmas de dron (sueltas) | Con regla de 2 ventanas seguidas |
 | --- | --- | --- | --- | --- |
-| Bloques de 1 min (10 pliegues) | 99.2% | 0.990 | 0 en 0.33 h sin dron | 0 |
+| Bloques de 1 min (10 pliegues) | 99.3% | 0.991 | 0 en 0.33 h sin dron | 0 |
 | Ultimo 30 % de cada grabacion | 100.0% | 1.000 | 0 en 0.10 h sin dron | 0 |
 
 Matriz de confusion (bloques de 1 min; filas = realidad, columnas = modelo):
@@ -26,19 +26,19 @@ Matriz de confusion (bloques de 1 min; filas = realidad, columnas = modelo):
 | | fondo | bluetooth | dron |
 | --- | --- | --- | --- |
 | **fondo** | 296 | 3 | 0 |
-| **bluetooth** | 5 | 295 | 0 |
+| **bluetooth** | 4 | 296 | 0 |
 | **dron** | 0 | 1 | 534 |
 
 ```
               precision    recall  f1-score   support
 
-       fondo      0.983     0.990     0.987       299
-   bluetooth      0.987     0.983     0.985       300
+       fondo      0.987     0.990     0.988       299
+   bluetooth      0.987     0.987     0.987       300
         dron      1.000     0.998     0.999       535
 
-    accuracy                          0.992      1134
-   macro avg      0.990     0.990     0.990      1134
-weighted avg      0.992     0.992     0.992      1134
+    accuracy                          0.993      1134
+   macro avg      0.991     0.992     0.991      1134
+weighted avg      0.993     0.993     0.993      1134
 ```
 
 ## Limites (van en el informe)

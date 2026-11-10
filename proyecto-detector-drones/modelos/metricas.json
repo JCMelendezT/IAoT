@@ -29,7 +29,7 @@
     "esp_canales_activos",
     "esp_variacion"
   ],
-  "exactitud_bloques": 0.9920634920634921,
+  "exactitud_bloques": 0.9929453262786596,
   "exactitud_ultimo_30": 1.0,
   "falsas_alarmas_bloques": [
     0,
@@ -46,8 +46,8 @@
       0
     ],
     [
-      5,
-      295,
+      4,
+      296,
       0
     ],
     [
