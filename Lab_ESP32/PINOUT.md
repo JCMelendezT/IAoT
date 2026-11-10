@@ -18,6 +18,7 @@ Estado: **confirmado** (2026-10-19). Prueba de vida en Arduino IDE (`firmware/nr
 | nRF24L01+ | MOSI | GPIO 11 | Confirmado (FSPI D) |
 | nRF24L01+ | MISO | GPIO 13 | Confirmado (FSPI Q) |
 | nRF24L01+ | IRQ | Sin conectar | No se necesita para el escáner |
+| LED RGB integrado (WS2812 de la placa) | DIN | GPIO 48 | Lo usa `nodo_detector` para mostrar la clase y la alerta. En placas v1.1 puede ser GPIO 38 (sin confirmar en esta placa) |
 | Pantalla RGB | _pendiente_ | _pendiente_ | |
 | Parlante | _pendiente_ | _pendiente_ | |
 | Teclado matricial | _pendiente_ | _pendiente_ | |
