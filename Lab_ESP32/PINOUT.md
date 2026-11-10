@@ -19,15 +19,15 @@ Estado: **confirmado** (2026-10-19). Prueba de vida en Arduino IDE (`firmware/nr
 | nRF24L01+ | MISO | GPIO 13 | Confirmado (FSPI Q) |
 | nRF24L01+ | IRQ | Sin conectar | No se necesita para el escáner |
 | LED RGB integrado (WS2812 de la placa) | DIN | GPIO 48 | Lo usa `nodo_detector` para mostrar la clase y la alerta. En placas v1.1 puede ser GPIO 38 (sin confirmar en esta placa) |
-| Pantalla TFT 1,8" ST7735 (128x160) | VCC | 3V3 | Propuesto 2026-11-10, sin confirmar. Bus SPI propio (HSPI), separado del nRF24 |
+| Pantalla TFT 1,8" ST7735 (128x160) | VCC | 3V3 | Etiquetas confirmadas con foto del módulo (2026-11-10). Bus SPI propio (HSPI), separado del nRF24 |
 | Pantalla TFT | GND | GND | |
 | Pantalla TFT | CS | GPIO 15 | |
-| Pantalla TFT | RESET | GPIO 7 | |
-| Pantalla TFT | A0 (DC) | GPIO 6 | |
-| Pantalla TFT | SDA (MOSI) | GPIO 5 | |
+| Pantalla TFT | RES | GPIO 7 | |
+| Pantalla TFT | DC | GPIO 6 | |
+| Pantalla TFT | SDA | GPIO 5 | Es la salida de datos (MOSI), no I2C |
 | Pantalla TFT | SCK | GPIO 4 | |
-| Pantalla TFT | LED (luz de fondo) | 3V3 | Siempre encendida |
-| ISD1820 (voz) | VCC | 3V3 | Propuesto 2026-11-10, sin confirmar. A 5 V suena más fuerte |
+| Pantalla TFT | BL (luz de fondo) | 3V3 | Siempre encendida |
+| ISD1820 (voz) | VCC | 3V3 | Columna izquierda del conector J1 (etiquetas confirmadas con foto). Quitar los puentes FT y P-E |
 | ISD1820 | GND | GND | |
 | ISD1820 | P-E | GPIO 16 | Un pulso de 80 ms reproduce el mensaje completo |
 | ISD1820 | REC, P-L, FT | Sin conectar | El mensaje se graba con el botón REC del módulo |

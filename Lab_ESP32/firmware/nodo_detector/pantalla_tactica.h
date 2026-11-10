@@ -3,8 +3,9 @@
 // detector funciona igual por el Monitor Serie y el LED.
 //
 // Pantalla (bus SPI propio, separado del nRF24):
-//   VCC=3V3  GND=GND  CS=15  RESET=7  A0/DC=6  SDA=5  SCK=4  LED=3V3
-// ISD1820:  VCC=3V3  GND=GND  P-E=16   (REC, P-L y FT sin conectar; el mensaje se graba con el boton REC)
+//   BL=3V3  CS=15  DC=6  RES=7  SDA=5  SCK=4  VCC=3V3  GND=GND   (orden del conector del modulo)
+// ISD1820 (conector J1):  VCC=3V3  GND=GND  P-E=16   (FT, P-L y REC sin conectar; quitar los puentes
+//   FT y P-E: con FT el parlante repite el microfono y con P-E el mensaje suena sin parar)
 //
 // Librerias (Arduino IDE > Gestor de librerias): "Adafruit ST7735 and ST7789" y "Adafruit GFX".
 #pragma once
