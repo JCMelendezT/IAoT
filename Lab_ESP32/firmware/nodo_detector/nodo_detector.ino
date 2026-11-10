@@ -21,6 +21,13 @@
 #include "rasgos_detector.h"
 #include "modelo_detector.h"
 
+// Pantalla tactica (TFT 1,8") y voz de alerta (ISD1820): pines en pantalla_tactica.h.
+// Pon 0 si no las tienes conectadas; con 0 no hace falta instalar las librerias de Adafruit.
+#define USAR_PANTALLA_Y_VOZ 1
+#if USAR_PANTALLA_Y_VOZ
+#include "pantalla_tactica.h"
+#endif
+
 // ---------- Pines del nRF24 ----------
 const int PIN_CE   = 9;
 const int PIN_CSN  = 10;
@@ -67,6 +74,8 @@ void led(uint8_t r, uint8_t g, uint8_t b) {
 //  Oido 1: nRF24 (tarea propia). Cada fila se suma a la ventana en curso.
 // ======================================================================
 VentanaEspectro espectroEnCurso;
+uint8_t ultimaFila[RD_CANALES];         // para la cascada de la pantalla
+volatile uint32_t filasNuevas = 0;
 portMUX_TYPE candadoEsp = portMUX_INITIALIZER_UNLOCKED;
 
 uint8_t leerRegistro(uint8_t reg) {
@@ -121,6 +130,8 @@ void tareaEspectro(void*) {
     }
     portENTER_CRITICAL(&candadoEsp);
     espectroAgregarFila(espectroEnCurso, fila);
+    memcpy(ultimaFila, fila, RD_CANALES);
+    filasNuevas++;
     portEXIT_CRITICAL(&candadoEsp);
   }
 }
@@ -221,6 +232,7 @@ bool modeloListo = false;
 uint32_t numVentana = 0;
 int seguidasDron = 0, seguidasSinDron = 0;
 bool alertaActiva = false;
+uint32_t totalAlertas = 0;
 
 void clasificarVentana() {
   VentanaWifi w = cerrarVentanaWifi();
@@ -250,13 +262,23 @@ void clasificarVentana() {
                 (int)lroundf(prob[0] * 100), (int)lroundf(prob[1] * 100), (int)lroundf(prob[2] * 100),
                 usModelo);
 
+  bool empiezaAlerta = false;
   if (!alertaActiva && seguidasDron >= VENTANAS_PARA_ALERTA) {
     alertaActiva = true;
+    empiezaAlerta = true;
+    totalAlertas++;
     Serial.println(">>> ALERTA: DRON DETECTADO <<<");
   } else if (alertaActiva && seguidasSinDron >= VENTANAS_PARA_APAGAR) {
     alertaActiva = false;
     Serial.println("--- alerta terminada ---");
   }
+
+#if USAR_PANTALLA_Y_VOZ
+  if (empiezaAlerta) vozReproducir();
+  pantallaResultado(clase, prob[2], alertaActiva, w.aparatos, numVentana, totalAlertas);
+#else
+  (void)empiezaAlerta;
+#endif
 
   if (alertaActiva)   led(255, 0, 0);     // rojo
   else if (esDron)    led(255, 160, 0);   // amarillo: una sola ventana, aun no es alerta
@@ -277,6 +299,11 @@ void setup() {
   delay(1500);
   led(255, 255, 255);
   Serial.println("# nodo_detector: arrancando");
+#if USAR_PANTALLA_Y_VOZ
+  vozIniciar();
+  pantallaIniciar();
+  pantallaArranqueTitulo();
+#endif
 
   const char* falta = rasgosPrepararMapa(DETECTOR_RASGOS, DETECTOR_N_RASGOS, mapaRasgos);
   if (falta) {
@@ -286,7 +313,8 @@ void setup() {
     Serial.printf("# Modelo: %d rasgos, clases fondo / bluetooth / dron\n", DETECTOR_N_RASGOS);
   }
 
-  if (iniciarNRF()) {
+  bool nrfOk = iniciarNRF();
+  if (nrfOk) {
     Serial.println("# nRF24 OK");
     espectroLimpiar(espectroEnCurso);
     xTaskCreatePinnedToCore(tareaEspectro, "espectro", 4096, NULL, 1, NULL, 1);
@@ -297,6 +325,15 @@ void setup() {
   iniciarSniffer();
   Serial.println("# WiFi OK (salto de canales 1-13)");
   Serial.println("# Listo: una linea cada 2 s");
+#if USAR_PANTALLA_Y_VOZ
+  char rasgosTxt[12];
+  snprintf(rasgosTxt, sizeof(rasgosTxt), "%d rasgos", DETECTOR_N_RASGOS);
+  pantallaArranqueLinea("MODELO", modeloListo, rasgosTxt);
+  pantallaArranqueLinea("NRF24", nrfOk, "126 canales");
+  pantallaArranqueLinea("WIFI", true, "canales 1-13");
+  pantallaArranqueLinea("VOZ", true, "ISD1820");
+  pantallaArranqueFin();
+#endif
   inicioVentana = ultimoSalto = millis();
 }
 
@@ -310,5 +347,18 @@ void loop() {
     inicioVentana = ahora;
     clasificarVentana();
   }
+#if USAR_PANTALLA_Y_VOZ
+  static uint32_t filasVistas = 0;
+  if (filasNuevas != filasVistas) {
+    uint8_t fila[RD_CANALES];
+    portENTER_CRITICAL(&candadoEsp);
+    memcpy(fila, ultimaFila, RD_CANALES);
+    filasVistas = filasNuevas;
+    portEXIT_CRITICAL(&candadoEsp);
+    pantallaAgregarFila(fila);
+  }
+  pantallaActualizar();
+  vozActualizar(alertaActiva);
+#endif
   delay(2);
 }
