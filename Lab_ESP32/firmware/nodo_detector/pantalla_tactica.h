@@ -45,8 +45,65 @@ const int CAS_X = 2, CAS_Y = 18, CAS_ALTO = 50;      // cascada: 126 canales de 
 const int BAR_X = 138, BAR_Y = 22, BAR_ANCHO = 14, BAR_ALTO = 42;
 const int CAJA_Y = 88;
 
+// Velocidad del bus de la pantalla. La libreria arranca a 32 MHz, demasiado para cables de
+// protoboard (la pantalla se queda en blanco). 10 MHz alcanza de sobra para la cascada.
+const uint32_t TFT_SPI_HZ = 10000000;
+
+// Secuencia de arranque del ST7735R (copiada de Adafruit_ST7735.cpp, licencia BSD) para
+// poder repetirla a la velocidad de arriba.
+static const uint8_t PROGMEM ST_INICIO1[] = {
+  15,
+  ST77XX_SWRESET, ST_CMD_DELAY, 150,
+  ST77XX_SLPOUT,  ST_CMD_DELAY, 255,
+  ST7735_FRMCTR1, 3, 0x01, 0x2C, 0x2D,
+  ST7735_FRMCTR2, 3, 0x01, 0x2C, 0x2D,
+  ST7735_FRMCTR3, 6, 0x01, 0x2C, 0x2D, 0x01, 0x2C, 0x2D,
+  ST7735_INVCTR,  1, 0x07,
+  ST7735_PWCTR1,  3, 0xA2, 0x02, 0x84,
+  ST7735_PWCTR2,  1, 0xC5,
+  ST7735_PWCTR3,  2, 0x0A, 0x00,
+  ST7735_PWCTR4,  2, 0x8A, 0x2A,
+  ST7735_PWCTR5,  2, 0x8A, 0xEE,
+  ST7735_VMCTR1,  1, 0x0E,
+  ST77XX_INVOFF,  0,
+  ST77XX_MADCTL,  1, 0xC8,
+  ST77XX_COLMOD,  1, 0x05 };
+static const uint8_t PROGMEM ST_INICIO2_ROJO[] = {
+  2,
+  ST77XX_CASET, 4, 0x00, 0x00, 0x00, 0x7F,
+  ST77XX_RASET, 4, 0x00, 0x00, 0x00, 0x9F };
+static const uint8_t PROGMEM ST_INICIO2_VERDE[] = {
+  2,
+  ST77XX_CASET, 4, 0x00, 0x02, 0x00, 0x7F + 0x02,
+  ST77XX_RASET, 4, 0x00, 0x01, 0x00, 0x9F + 0x01 };
+static const uint8_t PROGMEM ST_INICIO3[] = {
+  4,
+  ST7735_GMCTRP1, 16, 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d,
+                      0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10,
+  ST7735_GMCTRN1, 16, 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D,
+                      0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10,
+  ST77XX_NORON,  ST_CMD_DELAY, 10,
+  ST77XX_DISPON, ST_CMD_DELAY, 100 };
+
+class PantallaST7735 : public Adafruit_ST7735 {
+ public:
+  PantallaST7735(SPIClass* bus, int8_t cs, int8_t dc, int8_t rst) : Adafruit_ST7735(bus, cs, dc, rst) {}
+  // initR deja listo el estado interno de la libreria; luego se repite el arranque a TFT_SPI_HZ
+  void iniciar(uint8_t tipo, uint32_t hz) {
+    initR(tipo);
+    setSPISpeed(hz);
+    displayInit(ST_INICIO1);
+    displayInit(tipo == INITR_GREENTAB ? ST_INICIO2_VERDE : ST_INICIO2_ROJO);
+    displayInit(ST_INICIO3);
+    if (tipo == INITR_BLACKTAB) {
+      uint8_t d = 0xC0;
+      sendCommand(ST77XX_MADCTL, &d, 1);
+    }
+  }
+};
+
 SPIClass spiPantalla(HSPI);
-Adafruit_ST7735 tft(&spiPantalla, TFT_CS, TFT_DC, TFT_RST);
+PantallaST7735 tft(&spiPantalla, TFT_CS, TFT_DC, TFT_RST);
 
 uint8_t  cascada[CAS_ALTO][RD_CANALES];
 int      cascadaInicio = 0;                // fila mas nueva
@@ -181,7 +238,7 @@ void dibujarReloj() {
 // ======================================================================
 void pantallaIniciar() {
   spiPantalla.begin(TFT_SCK, -1, TFT_MOSI, TFT_CS);
-  tft.initR(TFT_TIPO);
+  tft.iniciar(TFT_TIPO, TFT_SPI_HZ);
   tft.setRotation(1);
   tft.fillScreen(C_FONDO);
   // Paleta tipo fosforo: negro -> verde -> amarillo -> blanco
