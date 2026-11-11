@@ -19,7 +19,7 @@ Estado: **confirmado** (2026-10-19). Prueba de vida en Arduino IDE (`firmware/nr
 | nRF24L01+ | MISO | GPIO 13 | Confirmado (FSPI Q) |
 | nRF24L01+ | IRQ | Sin conectar | No se necesita para el escáner |
 | LED RGB integrado (WS2812 de la placa) | DIN | GPIO 48 | Lo usa `nodo_detector` para mostrar la clase y la alerta. En placas v1.1 puede ser GPIO 38 (sin confirmar en esta placa) |
-| Pantalla TFT 1,8" ST7735 (128x160) | VCC | **5V** | El módulo (VER 1.0) trae regulador U1 en VCC y el puente J1 abierto: con 3V3 queda en blanco. Etiquetas confirmadas con foto (2026-11-10). Bus SPI propio (HSPI) |
+| Pantalla TFT 1,8" ST7735 (128x160) — **sin usar: se quedó en blanco** | VCC | **5V** | El módulo (VER 1.0) trae regulador U1 en VCC y el puente J1 abierto: con 3V3 queda en blanco. Etiquetas confirmadas con foto (2026-11-10). Bus SPI propio (HSPI) |
 | Pantalla TFT | GND | GND | |
 | Pantalla TFT | CS | GPIO 15 | |
 | Pantalla TFT | RES | GPIO 7 | |
@@ -34,11 +34,11 @@ Estado: **confirmado** (2026-10-19). Prueba de vida en Arduino IDE (`firmware/nr
 | Parlante 8 Ω 0,5 W | — | Conector SP del ISD1820 | No va al ESP32 |
 | Teclado matricial | _pendiente_ | _pendiente_ | |
 
-## Cable S3 → devkit (Práctica 1)
+## Cable S3 → devkit (Práctica 1 y sistema completo con `nodo_detector`)
 
 | ESP32-S3 | ESP32 devkit | Para qué |
 |---|---|---|
-| GPIO 17 (TX de UART1) | GPIO 16 (RX2) | el S3 manda cada ventana, latido y alerta |
+| GPIO 17 (TX de UART1) | GPIO 16 (RX2) | el S3 manda cada ventana, la decisión del modelo y las alertas |
 | GND | GND | referencia común |
 
 Velocidad 115200. Las dos placas trabajan a 3,3 V. GPIO 18 del S3 queda reservado (sin conectar).

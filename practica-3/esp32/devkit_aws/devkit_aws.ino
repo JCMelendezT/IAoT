@@ -10,6 +10,8 @@
        nivel_banda (energia en 2423-2456 MHz) y cada 5 s publica una lectura:
          detector1/nodo-s3/lectura   {"nivel_banda":..,"aparatos":..,"tramas":..,"rssi_max":..,"alerta":0|1}
        Las lineas "E,..." del S3 se publican en detector1/nodo-s3/evento.
+       Con nodo_detector (IA en el S3) llega ademas "D,ms,clase,p_fondo,p_bt,p_dron,alerta":
+       la lectura lleva "clase" y "prob_dron", y "alerta" pasa a ser la del modelo.
     4. Actuador (LED en GPIO 2, o un rele/buzzer): escucha detector1/actuador/cmd
        {"estado":"on|off"} y responde en detector1/actuador/estado.
 
@@ -32,7 +34,8 @@ const int   PIN_ACTUADOR = 2;               // LED integrado del devkit
 const unsigned long LECTURA_MS = 5000;      // una lectura cada 5 s hacia AWS
 const int   CAMPOS_V  = 15;
 const int   BANDA_INI = 23, BANDA_FIN = 57; // columnas 2423..2456 MHz
-const float UMBRAL_ALERTA = 2.5;            // igual que en la Practica 2
+const float UMBRAL_ALERTA = 2.5;            // solo si el S3 no manda la decision del modelo
+const unsigned long MODELO_VIGENTE_MS = 10000;
 
 WiFiClientSecure red;
 PubSubClient mqtt(red);
@@ -47,6 +50,12 @@ bool actuadorEncendido = false;
 bool  hayVentana = false;
 float uNivel = 0;
 int   uAparatos = 0, uTramas = 0, uRssiMax = 0, uVentana = 0, uCanal = 0;
+
+// Ultima decision del modelo del S3 (lineas D)
+char  uClase[16] = "";
+float uProbDron = 0;
+int   uAlertaModelo = 0;
+unsigned long ultimoModelo = 0;
 
 char tCmd[48], tEstado[48], tLectura[48], tEvento[48];
 
@@ -166,12 +175,23 @@ void procesarEvento(char* resto) {
   Serial.printf(">>> EVENTO del S3: %s (%s) -> %s\n", t[1], t[2], ok ? "PUBLICADO" : "FALLO");
 }
 
+void procesarModelo(char* resto) {
+  char* t[6];
+  if (partir(resto, t, 6) != 6 || !esNumero(t[0]) || !esNumero(t[5])) return;
+  strncpy(uClase, t[1], sizeof(uClase) - 1);
+  uClase[sizeof(uClase) - 1] = 0;
+  uProbDron = atof(t[4]);
+  uAlertaModelo = atoi(t[5]);
+  ultimoModelo = millis();
+}
+
 void procesarLinea(char* linea) {
   ultimoDatoS3 = millis();
   recibidas++;
   if (linea[0] == 0 || linea[1] != ',') return;
   if (linea[0] == 'V') procesarVentana(linea + 2);
   else if (linea[0] == 'E') procesarEvento(linea + 2);
+  else if (linea[0] == 'D') procesarModelo(linea + 2);
 }
 
 void leerCable() {
@@ -192,14 +212,22 @@ void leerCable() {
 
 void publicarLectura() {
   if (!hayVentana) return;
-  char json[260];
+  bool conModelo = ultimoModelo != 0 && millis() - ultimoModelo < MODELO_VIGENTE_MS;
+  int alerta = conModelo ? uAlertaModelo : (uNivel > UMBRAL_ALERTA ? 1 : 0);
+  char json[320];
   int m = snprintf(json, sizeof(json),
     "{\"nivel_banda\":%.2f,\"aparatos\":%d,\"tramas\":%d,\"rssi_max\":%d,\"ventana\":%d,\"canal\":%d,\"alerta\":%d,\"wifi_rssi\":%d",
-    uNivel, uAparatos, uTramas, uRssiMax, uVentana, uCanal, uNivel > UMBRAL_ALERTA ? 1 : 0, (int)WiFi.RSSI());
+    uNivel, uAparatos, uTramas, uRssiMax, uVentana, uCanal, alerta, (int)WiFi.RSSI());
+  if (conModelo)
+    m += snprintf(json + m, sizeof(json) - m, ",\"clase\":\"%s\",\"prob_dron\":%.3f", uClase, uProbDron);
   snprintf(json + m, sizeof(json) - m, "}");
   bool ok = publicar(tLectura, json);
-  Serial.printf("Lectura: banda %.2f, %d aparatos%s -> %s\n", uNivel, uAparatos,
-                uNivel > UMBRAL_ALERTA ? "  [ALERTA]" : "", ok ? "PUBLICADA" : "FALLO");
+  if (conModelo)
+    Serial.printf("Lectura: IA dice %s (dron %d %%), %d aparatos%s -> %s\n", uClase, (int)lroundf(uProbDron * 100),
+                  uAparatos, alerta ? "  [ALERTA]" : "", ok ? "PUBLICADA" : "FALLO");
+  else
+    Serial.printf("Lectura: banda %.2f, %d aparatos%s -> %s\n", uNivel, uAparatos,
+                  alerta ? "  [ALERTA]" : "", ok ? "PUBLICADA" : "FALLO");
   hayVentana = false;
 }
 

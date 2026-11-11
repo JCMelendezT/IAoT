@@ -10,7 +10,10 @@
 //   [  12] fondo       fondo  97 % | bluetooth   2 % | dron   1 %
 //   >>> ALERTA: DRON DETECTADO <<<          (cuando empieza)
 //   --- alerta terminada ---                 (cuando termina)
+// Ademas manda cada ventana y la decision del modelo por el GPIO 17 al devkit (devkit_aws),
+// que las sube a AWS IoT Core para el dashboard de la Practica 3.
 // LED RGB de la placa: verde = fondo, azul = bluetooth, amarillo = dron (1 ventana), rojo = ALERTA.
+// Con la alerta suena el ISD1820 (lo que tenga grabado) y se repite cada 5 s mientras dure.
 //
 // Conexiones del nRF24: CE=9  CSN=10  MOSI=11  SCK=12  MISO=13  VCC=3V3  GND=GND (Lab_ESP32/PINOUT.md)
 // Si se reentrena, entrenar.py copia aqui el modelo_detector.h nuevo: solo hay que volver a subir.
@@ -21,10 +24,19 @@
 #include "rasgos_detector.h"
 #include "modelo_detector.h"
 
-// Pantalla tactica (TFT 1,8") y voz de alerta (ISD1820): pines en pantalla_tactica.h.
-// Pon 0 si no las tienes conectadas; con 0 no hace falta instalar las librerias de Adafruit.
-#define USAR_PANTALLA_Y_VOZ 1
-#if USAR_PANTALLA_Y_VOZ
+// Sonido de alerta con el ISD1820 (voz_alerta.h). Pon 0 si no lo tienes conectado.
+#define USAR_VOZ 1
+// Pantalla tactica TFT 1,8" (pantalla_tactica.h). Apagada: la pantalla probada no arranco.
+// Con 0 no hace falta instalar las librerias de Adafruit.
+#define USAR_PANTALLA 0
+// Cable a la pasarela (ESP32 devkit con devkit_aws -> AWS IoT). Pon 0 si no usas la nube.
+#define USAR_PASARELA 1
+const int PIN_TX_PASARELA = 17;   // -> GPIO 16 (RX2) del devkit, y GND con GND
+const int PIN_RX_PASARELA = 18;   // reservado, sin conectar
+#if USAR_VOZ
+#include "voz_alerta.h"
+#endif
+#if USAR_PANTALLA
 #include "pantalla_tactica.h"
 #endif
 
@@ -234,6 +246,32 @@ int seguidasDron = 0, seguidasSinDron = 0;
 bool alertaActiva = false;
 uint32_t totalAlertas = 0;
 
+// Manda a la pasarela, por cada ventana:
+//   V,ms,ventana,0,tramas,aparatos,mgmt,datos,tam_prom,rssi_prom,rssi_max,debiles,fuertes,0,0,<126 digitos>
+//     (mismo formato de la Practica 1; los digitos son el maximo de cada canal en la ventana)
+//   D,ms,clase,p_fondo,p_bluetooth,p_dron,alerta     <- la decision del modelo
+//   E,ms,ALERTA_DRON,prob_dron=97%  /  E,ms,FIN_ALERTA,ventana=123   <- al empezar y terminar
+void enviarPasarela(const VentanaWifi& w, const VentanaEspectro& e, int clase, const float* prob,
+                    bool empieza, bool termina) {
+#if USAR_PASARELA
+  static char linea[200 + RD_CANALES];
+  unsigned long ms = millis();
+  int n = snprintf(linea, 200, "V,%lu,%lu,0,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,0,0,",
+                   ms, (unsigned long)numVentana, (long)w.tramas, (long)w.aparatos, (long)w.mgmt,
+                   (long)w.datos, (long)w.tamProm, (long)w.rssiProm, (long)w.rssiMax,
+                   (long)w.debiles, (long)w.fuertes);
+  for (int c = 0; c < RD_CANALES; c++) linea[n + c] = '0' + (e.maximo[c] > 8 ? 8 : e.maximo[c]);
+  linea[n + RD_CANALES] = 0;
+  Serial1.println(linea);
+  Serial1.printf("D,%lu,%s,%.3f,%.3f,%.3f,%d\n", ms, DETECTOR_CLASES[clase], prob[0], prob[1], prob[2],
+                 alertaActiva ? 1 : 0);
+  if (empieza) Serial1.printf("E,%lu,ALERTA_DRON,prob_dron=%d%%\n", ms, (int)lroundf(prob[2] * 100));
+  if (termina) Serial1.printf("E,%lu,FIN_ALERTA,ventana=%lu\n", ms, (unsigned long)numVentana);
+#else
+  (void)w; (void)e; (void)clase; (void)prob; (void)empieza; (void)termina;
+#endif
+}
+
 void clasificarVentana() {
   VentanaWifi w = cerrarVentanaWifi();
   VentanaEspectro e;
@@ -262,7 +300,7 @@ void clasificarVentana() {
                 (int)lroundf(prob[0] * 100), (int)lroundf(prob[1] * 100), (int)lroundf(prob[2] * 100),
                 usModelo);
 
-  bool empiezaAlerta = false;
+  bool empiezaAlerta = false, terminaAlerta = false;
   if (!alertaActiva && seguidasDron >= VENTANAS_PARA_ALERTA) {
     alertaActiva = true;
     empiezaAlerta = true;
@@ -270,15 +308,18 @@ void clasificarVentana() {
     Serial.println(">>> ALERTA: DRON DETECTADO <<<");
   } else if (alertaActiva && seguidasSinDron >= VENTANAS_PARA_APAGAR) {
     alertaActiva = false;
+    terminaAlerta = true;
     Serial.println("--- alerta terminada ---");
   }
+  enviarPasarela(w, e, clase, prob, empiezaAlerta, terminaAlerta);
 
-#if USAR_PANTALLA_Y_VOZ
+#if USAR_VOZ
   if (empiezaAlerta) vozReproducir();
-  pantallaResultado(clase, prob[2], alertaActiva, w.aparatos, numVentana, totalAlertas);
-#else
-  (void)empiezaAlerta;
 #endif
+#if USAR_PANTALLA
+  pantallaResultado(clase, prob[2], alertaActiva, w.aparatos, numVentana, totalAlertas);
+#endif
+  (void)empiezaAlerta;
 
   if (alertaActiva)   led(255, 0, 0);     // rojo
   else if (esDron)    led(255, 160, 0);   // amarillo: una sola ventana, aun no es alerta
@@ -296,11 +337,17 @@ void setup() {
 #if ARDUINO_USB_CDC_ON_BOOT && ARDUINO_USB_MODE
   Serial.setTxTimeoutMs(0);   // sin PC conectado, no se queda esperando al imprimir
 #endif
+#if USAR_PASARELA
+  Serial1.setTxBufferSize(1024);
+  Serial1.begin(115200, SERIAL_8N1, PIN_RX_PASARELA, PIN_TX_PASARELA);
+#endif
   delay(1500);
   led(255, 255, 255);
   Serial.println("# nodo_detector: arrancando");
-#if USAR_PANTALLA_Y_VOZ
+#if USAR_VOZ
   vozIniciar();
+#endif
+#if USAR_PANTALLA
   pantallaIniciar();
   pantallaArranqueTitulo();
 #endif
@@ -325,14 +372,17 @@ void setup() {
   iniciarSniffer();
   Serial.println("# WiFi OK (salto de canales 1-13)");
   Serial.println("# Listo: una linea cada 2 s");
-#if USAR_PANTALLA_Y_VOZ
+#if USAR_PANTALLA
   char rasgosTxt[12];
   snprintf(rasgosTxt, sizeof(rasgosTxt), "%d rasgos", DETECTOR_N_RASGOS);
   pantallaArranqueLinea("MODELO", modeloListo, rasgosTxt);
   pantallaArranqueLinea("NRF24", nrfOk, "126 canales");
   pantallaArranqueLinea("WIFI", true, "canales 1-13");
-  pantallaArranqueLinea("VOZ", true, "ISD1820");
+  pantallaArranqueLinea("VOZ", USAR_VOZ, "ISD1820");
   pantallaArranqueFin();
+#endif
+#if USAR_VOZ
+  vozReproducir();   // suena una vez al arrancar: asi sabes que el parlante funciona
 #endif
   inicioVentana = ultimoSalto = millis();
 }
@@ -347,7 +397,7 @@ void loop() {
     inicioVentana = ahora;
     clasificarVentana();
   }
-#if USAR_PANTALLA_Y_VOZ
+#if USAR_PANTALLA
   static uint32_t filasVistas = 0;
   if (filasNuevas != filasVistas) {
     uint8_t fila[RD_CANALES];
@@ -358,6 +408,8 @@ void loop() {
     pantallaAgregarFila(fila);
   }
   pantallaActualizar();
+#endif
+#if USAR_VOZ
   vozActualizar(alertaActiva);
 #endif
   delay(2);

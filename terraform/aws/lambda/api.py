@@ -27,8 +27,8 @@ RAIZ = os.environ["RAIZ"]
 TOKEN = os.environ["TOKEN"]
 
 COLUMNAS_CSV = ["fecha_utc", "ts_ms", "nodo", "tema", "nivel_banda", "aparatos", "tramas",
-                "rssi_max", "alerta", "temperatura", "humedad", "ventana", "canal",
-                "tipo", "detalle"]
+                "rssi_max", "alerta", "clase", "prob_dron", "temperatura", "humedad", "ventana",
+                "canal", "tipo", "detalle"]
 
 
 def _num(o):

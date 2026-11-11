@@ -1,6 +1,6 @@
 # nodo_detector — el modelo corre dentro del ESP32-S3
 
-Escucha igual que `nodo_captura` (nRF24 + WiFi en modo promiscuo), pero en vez de mandar los datos al PC, cada 2 s calcula los 28 rasgos, usa el modelo y dice **fondo**, **bluetooth** o **dron**. Si sale dron en 2 ventanas seguidas, enciende la **alerta**. Solo escucha: no transmite nada.
+Escucha igual que `nodo_captura` (nRF24 + WiFi en modo promiscuo), pero en vez de mandar los datos al PC, cada 2 s calcula los 28 rasgos, usa el modelo y dice **fondo**, **bluetooth** o **dron**. Si sale dron en 2 ventanas seguidas, enciende la **alerta**: LED rojo, sonido del ISD1820 y aviso al devkit, que lo sube a AWS. Solo escucha por radio: no transmite nada.
 
 ## Cómo subirlo
 
@@ -24,16 +24,17 @@ Debe salir:
 
 LED RGB de la placa: verde = fondo, azul = bluetooth, amarillo = una ventana de dron, **rojo = alerta**, morado = el nRF24 no responde.
 
-## Pantalla táctica y voz de alerta (opcional)
+## Sonido de alerta (ISD1820) — `USAR_VOZ 1`
 
-Con la pantalla TFT de 1,8" y el módulo ISD1820 el nodo se vuelve una consola: arranca con un chequeo de cada sistema, muestra la cascada del espectro en vivo con la banda del dron marcada, la probabilidad de dron y el estado (DESPEJADO, BLUETOOTH, POSIBLE DRON). Con la alerta, el recuadro parpadea en rojo con "AMENAZA: DRON" y el parlante dice el mensaje que grabaste, que se repite cada 12 s mientras dure.
+El ISD1820 no genera sonidos: reproduce lo que le grabes (hasta 10 s). Graba un pitido o una sirena (por ejemplo, reproduciéndolo desde el celular junto al micrófono) manteniendo presionado **REC**. El detector lo hace sonar una vez al arrancar (prueba del parlante), al empezar una alerta y cada 5 s mientras dure. Conexión: VCC 3V3, GND, **P-E → GPIO 16**; quita los puentes FT y P-E del módulo.
 
-1. Instala en el Gestor de librerías: **Adafruit ST7735 and ST7789** (acepta instalar también Adafruit GFX y BusIO).
-2. Conecta según `Lab_ESP32/PINOUT.md` (pantalla: BL 3V3, CS 15, DC 6, RES 7, SDA 5, SCK 4, **VCC 5V**; voz: P-E 16). En el ISD1820 quita los puentes FT y P-E.
-3. Graba el mensaje: mantén presionado **REC** en el ISD1820 y habla cerca del micrófono (hasta 10 s), por ejemplo "Alerta. Dron detectado." Pruébalo con el botón PLAYE.
-4. Sube el sketch. Si no tienes la pantalla o el módulo, pon `USAR_PANTALLA_Y_VOZ` en `0` y funciona como antes.
+## Envío a la nube (devkit + AWS) — `USAR_PASARELA 1`
 
-Si los colores salen invertidos o hay una franja de basura en un borde, cambia `TFT_TIPO` en `pantalla_tactica.h` por `INITR_GREENTAB` o `INITR_REDTAB`.
+Por el **GPIO 17** (al GPIO 16 del devkit, con GND común) manda cada ventana (`V,...`, el mismo formato de la Práctica 1), la decisión del modelo (`D,ms,clase,p_fondo,p_bluetooth,p_dron,alerta`) y un evento al empezar y terminar cada alerta (`E,...`). El devkit con `practica-3/esp32/devkit_aws` lo sube a AWS IoT Core y el dashboard muestra la clase, la probabilidad y la alerta del modelo.
+
+## Pantalla TFT — `USAR_PANTALLA 0`
+
+Queda apagada: la pantalla probada (1,8" VER 1.0) se quedó en blanco con distintos pines, velocidades y alimentación. El código sigue en `pantalla_tactica.h` y `Lab_ESP32/firmware/prueba_pantalla/` por si se consigue otra; con `0` no hace falta instalar las librerías de Adafruit.
 
 ## Archivos
 
@@ -42,7 +43,8 @@ Si los colores salen invertidos o hay una franja de basura en un borde, cambia `
 | `nodo_detector.ino` | Lectura de los dos sensores, ventanas de 2 s, alerta y LED |
 | `rasgos_detector.h` | Cálculo de rasgos, idéntico a `proyecto-detector-drones/ml/rasgos.py` |
 | `modelo_detector.h` | Modelo (lo genera `entrenar.py`; no se edita a mano) |
-| `pantalla_tactica.h` | Pantalla TFT y voz de alerta (se activa con `USAR_PANTALLA_Y_VOZ`) |
+| `voz_alerta.h` | Sonido de alerta con el ISD1820 (`USAR_VOZ`) |
+| `pantalla_tactica.h` | Pantalla TFT (`USAR_PANTALLA`, apagada) |
 | `prueba_pc/` | Prueba en el PC: pasa las grabaciones por el mismo código C++ y lo compara con Python |
 
 Si reentrenas, `entrenar.py` deja aquí el `modelo_detector.h` nuevo: basta con volver a subir el sketch.

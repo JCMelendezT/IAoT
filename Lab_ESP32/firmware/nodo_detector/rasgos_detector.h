@@ -25,6 +25,7 @@ struct VentanaEspectro {
   uint32_t suma[RD_CANALES];   // suma de cada canal sobre las filas de la ventana
   uint16_t filas;
   uint8_t  maxBandaDron;       // valor mas alto visto en 2423-2456 MHz
+  uint8_t  maximo[RD_CANALES]; // maximo de cada canal (solo para el resumen que va a la nube)
   double   sumaMediaFila;      // para la variacion de una fila a otra
   double   sumaMediaFila2;
 };
@@ -36,6 +37,7 @@ static inline void espectroAgregarFila(VentanaEspectro& e, const uint8_t* fila) 
   for (int c = 0; c < RD_CANALES; c++) {
     e.suma[c] += fila[c];
     total += fila[c];
+    if (fila[c] > e.maximo[c]) e.maximo[c] = fila[c];
     if (c >= RD_BANDA_DRON_INI && c < RD_BANDA_DRON_FIN && fila[c] > e.maxBandaDron)
       e.maxBandaDron = fila[c];
   }

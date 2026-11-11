@@ -11,7 +11,7 @@
 | Práctica 2 (MQTT + InfluxDB + Grafana en Azure) | 2026-10-31 | Presentada |
 | Práctica 3 (AWS serverless: IoT Core, DynamoDB, Lambda, S3) | 2026-11-05 | Desplegada con Terraform y probada (simulador y dashboard); falta la presentación |
 | Terraform (`terraform/azure` y `terraform/aws`) | 2026-11-05 | AWS aplicado y verificado; Azure escrito, sin aplicar |
-| Proyecto final: detector de drones RF | Sin fecha fija | Detector funcionando en la placa: alerta a 5 m (dron en tierra) y 8 m (en vuelo) dentro de casa. Siguiente: pantalla táctica y voz (firmware listo, falta montarlas) e informe |
+| Proyecto final: detector de drones RF | Sin fecha fija | Detector funcionando en la placa: alerta a 5 m (dron en tierra) y 8 m (en vuelo) dentro de casa. Sistema completo sin pantalla: sonido ISD1820 + devkit → AWS IoT → dashboard con la alerta del modelo (firmware listo, falta probar). Siguiente: informe |
 
 ## Plan del proyecto final (del doc de diseño)
 

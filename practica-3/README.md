@@ -18,6 +18,8 @@ flowchart LR
 Todo es *serverless*: no hay máquinas que mantener. Se crea con Terraform (`terraform/aws`).
 
 > **Estado (2026-11-05):** desplegada en AWS Academy Learner Lab (`us-east-1`) y probada con el simulador y el dashboard.
+>
+> **2026-11-10:** con el firmware `nodo_detector` en el S3, la lectura lleva también `clase` y `prob_dron`, y `alerta` es la del modelo de IA (no el umbral). El dashboard muestra la clasificación y el CSV incluye esas columnas. Hay que volver a correr `terraform apply` para subir el dashboard y la Lambda nuevos.
 
 ## Qué hay en cada carpeta
 
@@ -33,7 +35,7 @@ Todo es *serverless*: no hay máquinas que mantener. Se crea con Terraform (`ter
 
 | Topic | Quién publica | Contenido |
 | --- | --- | --- |
-| `detector1/nodo-s3/lectura` | devkit, cada 5 s | JSON: `nivel_banda`, `aparatos`, `tramas`, `rssi_max`, `alerta` |
+| `detector1/nodo-s3/lectura` | devkit, cada 5 s | JSON: `nivel_banda`, `aparatos`, `tramas`, `rssi_max`, `alerta` y, con `nodo_detector`, `clase` y `prob_dron` |
 | `detector1/nodo-s3/evento` | devkit | JSON: `tipo`, `detalle` (alertas del S3) |
 | `detector1/actuador/cmd` | dashboard (vía Lambda) | `{"estado":"on"}` o `{"estado":"off"}` |
 | `detector1/actuador/estado` | devkit | `{"estado":"on|off"}` (confirmación) |

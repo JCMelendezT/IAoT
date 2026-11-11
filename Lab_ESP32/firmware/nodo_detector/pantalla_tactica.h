@@ -1,12 +1,10 @@
-// Pantalla tactica (TFT 1,8" ST7735, 160x128 acostada) y voz de alerta (ISD1820).
+// Pantalla tactica (TFT 1,8" ST7735, 160x128 acostada). La voz de alerta esta en voz_alerta.h.
 // La deteccion no depende de esto: si la pantalla o el modulo de voz no estan, el
 // detector funciona igual por el Monitor Serie y el LED.
 //
 // Pantalla (bus SPI propio, separado del nRF24):
 //   BL=3V3  CS=15  DC=6  RES=7  SDA=5  SCK=4  VCC=5V  GND=GND   (orden del conector del modulo)
 //   VCC va a 5V: el modulo trae regulador (U1) y con 3V3 se queda en blanco
-// ISD1820 (conector J1):  VCC=3V3  GND=GND  P-E=16   (FT, P-L y REC sin conectar; quitar los puentes
-//   FT y P-E: con FT el parlante repite el microfono y con P-E el mensaje suena sin parar)
 //
 // Librerias (Arduino IDE > Gestor de librerias): "Adafruit ST7735 and ST7789" y "Adafruit GFX".
 #pragma once
@@ -20,14 +18,10 @@ const int TFT_MOSI = 5;
 const int TFT_DC   = 6;
 const int TFT_RST  = 7;
 const int TFT_CS   = 15;
-const int VOZ_PLAY = 16;           // P-E del ISD1820: un pulso reproduce el mensaje completo
 
 // Si los colores salen raros o hay una franja de basura en un borde, prueba
 // INITR_GREENTAB o INITR_REDTAB en vez de INITR_BLACKTAB.
 #define TFT_TIPO INITR_BLACKTAB
-
-const unsigned long VOZ_PULSO_MS    = 80;
-const unsigned long VOZ_REPETIR_MS  = 12000;  // mientras dure la alerta, repite el aviso
 
 // ---------- Colores (RGB565) ----------
 #define C_FONDO    0x0000
@@ -116,34 +110,6 @@ int      pClase = 0, pProbDron = 0, pAparatos = 0;
 uint32_t pVentana = 0, pAlertas = 0;
 bool     pAlerta = false, pParpadeo = false;
 unsigned long pUltimoParpadeo = 0, pUltimoReloj = 0;
-
-// Voz
-unsigned long vozInicio = 0, vozUltima = 0;
-bool vozPulsoActivo = false;
-
-// ======================================================================
-//  Voz
-// ======================================================================
-void vozIniciar() {
-  pinMode(VOZ_PLAY, OUTPUT);
-  digitalWrite(VOZ_PLAY, LOW);
-}
-
-void vozReproducir() {
-  digitalWrite(VOZ_PLAY, HIGH);
-  vozPulsoActivo = true;
-  vozInicio = vozUltima = millis();
-}
-
-// Llamar en cada vuelta del loop
-void vozActualizar(bool alerta) {
-  unsigned long ahora = millis();
-  if (vozPulsoActivo && ahora - vozInicio >= VOZ_PULSO_MS) {
-    digitalWrite(VOZ_PLAY, LOW);
-    vozPulsoActivo = false;
-  }
-  if (alerta && !vozPulsoActivo && ahora - vozUltima >= VOZ_REPETIR_MS) vozReproducir();
-}
 
 // ======================================================================
 //  Pantalla: piezas
