@@ -2,51 +2,58 @@
 // Usa SPI "a mano" (lento y a prueba de cables largos): si esto no muestra nada,
 // el problema es de cables o alimentacion, no del firmware del detector.
 //
-// Conexiones: BL=3V3  CS=15  DC=6  RES=7  SDA=5  SCK=4  VCC=3V3  GND=GND
+// Conexiones: BL=3V3  CS=15  DC=6  RES=7  SDA=5  SCK=4  VCC=3V3 (o 5V)  GND=GND
 // Libreria: "Adafruit ST7735 and ST7789". Monitor Serie a 115200.
 //
-// Debe verse: pantalla ROJA, luego VERDE, luego AZUL (1 s cada una) y despues tres
-// franjas con sus nombres y el texto "PANTALLA OK". Si los colores no coinciden con
-// los nombres, cambia INITR_BLACKTAB por INITR_GREENTAB (y anota cual sirvio).
+// Prueba sola, cada 6 s, las cuatro formas de arrancar el chip (A, B, C y D). En cada una
+// muestra rojo, verde, azul y luego la letra en grande. Cuando la pantalla deje de estar
+// en blanco, anota la letra que se ve: esa es la que va en nodo_detector.
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 
 const int TFT_SCK = 4, TFT_MOSI = 5, TFT_DC = 6, TFT_RST = 7, TFT_CS = 15;
-#define TFT_TIPO INITR_BLACKTAB
 
 Adafruit_ST7735 tft(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST);   // SPI por software
+
+struct Modo { char letra; const char* nombre; uint8_t tipo; bool esB; };
+const Modo MODOS[] = {
+  {'A', "INITR_BLACKTAB", INITR_BLACKTAB, false},
+  {'B', "INITR_GREENTAB", INITR_GREENTAB, false},
+  {'C', "INITR_REDTAB",   INITR_REDTAB,   false},
+  {'D', "initB (ST7735B)", 0,             true},
+};
+const int N_MODOS = sizeof(MODOS) / sizeof(MODOS[0]);
+
+void probar(const Modo& m) {
+  Serial.printf("# Modo %c: %s\n", m.letra, m.nombre);
+  if (m.esB) tft.initB(); else tft.initR(m.tipo);
+  tft.setRotation(1);
+  tft.fillScreen(ST77XX_RED);   delay(700);
+  tft.fillScreen(ST77XX_GREEN); delay(700);
+  tft.fillScreen(ST77XX_BLUE);  delay(700);
+  tft.fillScreen(ST77XX_BLACK);
+  tft.fillRect(0, 0, 53, 40, ST77XX_RED);
+  tft.fillRect(53, 0, 54, 40, ST77XX_GREEN);
+  tft.fillRect(107, 0, 53, 40, ST77XX_BLUE);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(1);
+  tft.setCursor(8, 44);   tft.print("ROJO");
+  tft.setCursor(64, 44);  tft.print("VERDE");
+  tft.setCursor(120, 44); tft.print("AZUL");
+  tft.setTextSize(6);
+  tft.setTextColor(ST77XX_YELLOW);
+  tft.setCursor(62, 62);
+  tft.print(m.letra);
+  delay(3500);
+}
 
 void setup() {
   Serial.begin(115200);
   delay(1500);
-  Serial.println("# prueba_pantalla: iniciando la pantalla...");
-  tft.initR(TFT_TIPO);
-  tft.setRotation(1);
-  Serial.println("# Rojo");  tft.fillScreen(ST77XX_RED);   delay(1000);
-  Serial.println("# Verde"); tft.fillScreen(ST77XX_GREEN); delay(1000);
-  Serial.println("# Azul");  tft.fillScreen(ST77XX_BLUE);  delay(1000);
-
-  tft.fillScreen(ST77XX_BLACK);
-  tft.fillRect(0, 0, 53, 70, ST77XX_RED);
-  tft.fillRect(53, 0, 54, 70, ST77XX_GREEN);
-  tft.fillRect(107, 0, 53, 70, ST77XX_BLUE);
-  tft.setTextColor(ST77XX_WHITE);
-  tft.setTextSize(1);
-  tft.setCursor(8, 74);   tft.print("ROJO");
-  tft.setCursor(64, 74);  tft.print("VERDE");
-  tft.setCursor(120, 74); tft.print("AZUL");
-  tft.setTextSize(2);
-  tft.setTextColor(ST77XX_GREEN);
-  tft.setCursor(10, 96);
-  tft.print("PANTALLA OK");
-  Serial.println("# Listo: si ves las franjas con su nombre, la pantalla y los cables estan bien.");
+  Serial.println("# prueba_pantalla: probando las 4 formas de arrancar la pantalla");
 }
 
 void loop() {
-  // Un punto que parpadea en la esquina para saber que la placa sigue viva
-  static bool encendido = false;
-  encendido = !encendido;
-  tft.fillCircle(152, 120, 4, encendido ? ST77XX_WHITE : ST77XX_BLACK);
-  delay(500);
+  for (int i = 0; i < N_MODOS; i++) probar(MODOS[i]);
 }
