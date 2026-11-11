@@ -13,7 +13,14 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 
+// Para descartar los pines: pon 1, desconecta el nRF24 y conecta la pantalla en sus pines,
+// que ya sabemos que funcionan:  SCK=12  SDA=11  CS=10  DC=9  RES=14  (BL 3V3, VCC 5V, GND)
+#define USAR_PINES_DEL_NRF24 0
+#if USAR_PINES_DEL_NRF24
+const int TFT_SCK = 12, TFT_MOSI = 11, TFT_DC = 9, TFT_RST = 14, TFT_CS = 10;
+#else
 const int TFT_SCK = 4, TFT_MOSI = 5, TFT_DC = 6, TFT_RST = 7, TFT_CS = 15;
+#endif
 
 Adafruit_ST7735 tft(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST);   // SPI por software
 
@@ -53,6 +60,7 @@ void setup() {
   Serial.begin(115200);
   delay(1500);
   Serial.println("# prueba_pantalla: probando las 4 formas de arrancar la pantalla");
+  Serial.printf("# Pines: SCK=%d SDA=%d CS=%d DC=%d RES=%d\n", TFT_SCK, TFT_MOSI, TFT_CS, TFT_DC, TFT_RST);
 }
 
 void loop() {
