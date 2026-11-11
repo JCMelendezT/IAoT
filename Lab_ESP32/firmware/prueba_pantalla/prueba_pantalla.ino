@@ -2,7 +2,8 @@
 // Usa SPI "a mano" (lento y a prueba de cables largos): si esto no muestra nada,
 // el problema es de cables o alimentacion, no del firmware del detector.
 //
-// Conexiones: BL=3V3  CS=15  DC=6  RES=7  SDA=5  SCK=4  VCC=3V3 (o 5V)  GND=GND
+// Conexiones: BL=3V3  CS=15  DC=6  RES=7  SDA=5  SCK=4  VCC=5V  GND=GND
+// (VCC a 5V: el modulo trae regulador U1; con 3V3 la pantalla se queda en blanco)
 // Libreria: "Adafruit ST7735 and ST7789". Monitor Serie a 115200.
 //
 // Prueba sola, cada 6 s, las cuatro formas de arrancar el chip (A, B, C y D). En cada una
