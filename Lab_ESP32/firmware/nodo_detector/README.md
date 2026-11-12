@@ -32,6 +32,14 @@ El ISD1820 no genera sonidos: reproduce lo que le grabes (hasta 10 s). Graba un 
 
 Por el **GPIO 17** (al GPIO 16 del devkit, con GND común) manda cada ventana (`V,...`, el mismo formato de la Práctica 1), la decisión del modelo (`D,ms,clase,p_fondo,p_bluetooth,p_dron,alerta`) y un evento al empezar y terminar cada alerta (`E,...`). El devkit con `practica-3/esp32/devkit_aws` lo sube a AWS IoT Core y el dashboard muestra la clase, la probabilidad y la alerta del modelo.
 
+## Órdenes desde la app (`modelo_activo.h`)
+
+Con `devkit_centinela`, el cable de vuelta (**GPIO 17 del devkit → GPIO 18 del S3**) trae órdenes de la app del celular:
+
+- **Modelo nuevo** (`M,...`): reentrenado en el celular. Se revisa con un hash, se guarda en la memoria del S3 y queda activo sin volver a subir el firmware. `X` vuelve al de fábrica (`modelo_detector.h`).
+- **Ajustes** (`C,clave,valor`): ventanas seguidas para encender (`alerta`) y apagar (`apagar`) la alerta, sonido (`voz`), segundos entre avisos (`repetir`), `probar_voz`. También se guardan.
+- Además el S3 manda por cada ventana una línea `R` con los 35 rasgos, que el devkit guarda para reentrenar.
+
 ## Pantalla TFT — `USAR_PANTALLA 0`
 
 Queda apagada: la pantalla probada (1,8" VER 1.0) se quedó en blanco con distintos pines, velocidades y alimentación. El código sigue en `pantalla_tactica.h` y `Lab_ESP32/firmware/prueba_pantalla/` por si se consigue otra; con `0` no hace falta instalar las librerías de Adafruit.
@@ -44,6 +52,7 @@ Queda apagada: la pantalla probada (1,8" VER 1.0) se quedó en blanco con distin
 | `rasgos_detector.h` | Cálculo de rasgos, idéntico a `proyecto-detector-drones/ml/rasgos.py` |
 | `modelo_detector.h` | Modelo (lo genera `entrenar.py`; no se edita a mano) |
 | `voz_alerta.h` | Sonido de alerta con el ISD1820 (`USAR_VOZ`) |
+| `modelo_activo.h` | Modelo guardado en memoria, ajustes y órdenes del devkit |
 | `pantalla_tactica.h` | Pantalla TFT (`USAR_PANTALLA`, apagada) |
 | `prueba_pc/` | Prueba en el PC: pasa las grabaciones por el mismo código C++ y lo compara con Python |
 

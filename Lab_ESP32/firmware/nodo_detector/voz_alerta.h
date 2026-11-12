@@ -6,10 +6,13 @@
 // Quitar los puentes FT y P-E del modulo (con FT el parlante repite el microfono y con
 // P-E el sonido se repite sin parar). El parlante va al conector SP del modulo.
 #pragma once
+#define HAY_VOZ 1
 
 const int VOZ_PLAY = 16;                     // P-E del ISD1820
-const unsigned long VOZ_PULSO_MS   = 80;
-const unsigned long VOZ_REPETIR_MS = 5000;   // mientras dure la alerta, repite el sonido
+const unsigned long VOZ_PULSO_MS = 80;
+// Se pueden cambiar desde la app (se guardan en la memoria del S3)
+bool vozActiva = true;
+unsigned long vozRepetirMs = 5000;           // mientras dure la alerta, repite el sonido
 
 unsigned long vozInicio = 0, vozUltima = 0;
 bool vozPulsoActivo = false;
@@ -32,5 +35,5 @@ void vozActualizar(bool alerta) {
     digitalWrite(VOZ_PLAY, LOW);
     vozPulsoActivo = false;
   }
-  if (alerta && !vozPulsoActivo && ahora - vozUltima >= VOZ_REPETIR_MS) vozReproducir();
+  if (alerta && vozActiva && !vozPulsoActivo && ahora - vozUltima >= vozRepetirMs) vozReproducir();
 }

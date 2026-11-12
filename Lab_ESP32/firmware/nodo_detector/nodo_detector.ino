@@ -32,13 +32,14 @@
 // Cable a la pasarela (ESP32 devkit con devkit_aws -> AWS IoT). Pon 0 si no usas la nube.
 #define USAR_PASARELA 1
 const int PIN_TX_PASARELA = 17;   // -> GPIO 16 (RX2) del devkit, y GND con GND
-const int PIN_RX_PASARELA = 18;   // reservado, sin conectar
+const int PIN_RX_PASARELA = 18;   // <- GPIO 17 (TX2) del devkit: ordenes de la app (modelo, ajustes)
 #if USAR_VOZ
 #include "voz_alerta.h"
 #endif
 #if USAR_PANTALLA
 #include "pantalla_tactica.h"
 #endif
+#include "modelo_activo.h"   // modelo guardado en memoria, ajustes y ordenes del devkit
 
 // ---------- Pines del nRF24 ----------
 const int PIN_CE   = 9;
@@ -57,8 +58,8 @@ const int RSSI_DEBIL        = -75;
 const int RSSI_FUERTE       = -55;
 
 // ---------- Alerta ----------
-const int VENTANAS_PARA_ALERTA = 2;  // "dron" seguidas para encender la alerta
-const int VENTANAS_PARA_APAGAR = 2;  // ventanas sin dron seguidas para apagarla
+// Ventanas seguidas para encender y apagar la alerta: ventanasAlerta y ventanasApagar
+// (modelo_activo.h), 2 y 2 por defecto, se cambian desde la app.
 const uint8_t BRILLO_LED       = 30; // 0..255
 // LED RGB de la placa: GPIO 48 en la DevKitC-1 v1.0 (lo que trae RGB_BUILTIN).
 // Si no prende, algunas placas (v1.1) lo tienen en el 38: cambia la linea por  = 38;
@@ -239,8 +240,6 @@ VentanaWifi cerrarVentanaWifi() {
 // ======================================================================
 //  Clasificacion y alerta
 // ======================================================================
-int mapaRasgos[DETECTOR_N_RASGOS];
-bool modeloListo = false;
 uint32_t numVentana = 0;
 int seguidasDron = 0, seguidasSinDron = 0;
 bool alertaActiva = false;
@@ -251,10 +250,12 @@ uint32_t totalAlertas = 0;
 //     (mismo formato de la Practica 1; los digitos son el maximo de cada canal en la ventana)
 //   D,ms,clase,p_fondo,p_bluetooth,p_dron,alerta     <- la decision del modelo
 //   E,ms,ALERTA_DRON,prob_dron=97%  /  E,ms,FIN_ALERTA,ventana=123   <- al empezar y terminar
-void enviarPasarela(const VentanaWifi& w, const VentanaEspectro& e, int clase, const float* prob,
-                    bool empieza, bool termina) {
+//   R,ms,ventana,clase,p_fondo,p_bt,p_dron,alerta,<35 rasgos en el orden de RD_NOMBRES>
+//     (para que la app grabe datos y reentrene con exactamente lo que calcula el S3)
+void enviarPasarela(const VentanaWifi& w, const VentanaEspectro& e, const float* todos, int clase,
+                    const float* prob, bool empieza, bool termina) {
 #if USAR_PASARELA
-  static char linea[200 + RD_CANALES];
+  static char linea[640];             // V (~330), R (~500)
   unsigned long ms = millis();
   int n = snprintf(linea, 200, "V,%lu,%lu,0,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,0,0,",
                    ms, (unsigned long)numVentana, (long)w.tramas, (long)w.aparatos, (long)w.mgmt,
@@ -267,8 +268,13 @@ void enviarPasarela(const VentanaWifi& w, const VentanaEspectro& e, int clase, c
                  alertaActiva ? 1 : 0);
   if (empieza) Serial1.printf("E,%lu,ALERTA_DRON,prob_dron=%d%%\n", ms, (int)lroundf(prob[2] * 100));
   if (termina) Serial1.printf("E,%lu,FIN_ALERTA,ventana=%lu\n", ms, (unsigned long)numVentana);
+  n = snprintf(linea, sizeof(linea), "R,%lu,%lu,%d,%.4f,%.4f,%.4f,%d", ms, (unsigned long)numVentana, clase,
+               prob[0], prob[1], prob[2], alertaActiva ? 1 : 0);
+  for (int i = 0; i < RD_N_TODOS && n < (int)sizeof(linea) - 16; i++)
+    n += snprintf(linea + n, sizeof(linea) - n, ",%.5g", todos[i]);
+  Serial1.println(linea);
 #else
-  (void)w; (void)e; (void)clase; (void)prob; (void)empieza; (void)termina;
+  (void)w; (void)e; (void)todos; (void)clase; (void)prob; (void)empieza; (void)termina;
 #endif
 }
 
@@ -281,14 +287,13 @@ void clasificarVentana() {
   portEXIT_CRITICAL(&candadoEsp);
   numVentana++;
 
-  float todos[RD_N_TODOS], x[DETECTOR_N_RASGOS], prob[DETECTOR_N_CLASES];
+  float todos[RD_N_TODOS], prob[3];
   if (!modeloListo || !rasgosCalcular(w, e, todos)) {
     Serial.printf("[%4lu] (sin espectro suficiente: %u filas)\n", (unsigned long)numVentana, e.filas);
     return;
   }
-  rasgosElegir(todos, mapaRasgos, DETECTOR_N_RASGOS, x);
   unsigned long t0 = micros();
-  int clase = detectorClasificar(x, prob);
+  int clase = modeloClasificar(modelo, todos, prob);
   unsigned long usModelo = micros() - t0;
   bool esDron = (clase == 2);
 
@@ -301,20 +306,20 @@ void clasificarVentana() {
                 usModelo);
 
   bool empiezaAlerta = false, terminaAlerta = false;
-  if (!alertaActiva && seguidasDron >= VENTANAS_PARA_ALERTA) {
+  if (!alertaActiva && seguidasDron >= ventanasAlerta) {
     alertaActiva = true;
     empiezaAlerta = true;
     totalAlertas++;
     Serial.println(">>> ALERTA: DRON DETECTADO <<<");
-  } else if (alertaActiva && seguidasSinDron >= VENTANAS_PARA_APAGAR) {
+  } else if (alertaActiva && seguidasSinDron >= ventanasApagar) {
     alertaActiva = false;
     terminaAlerta = true;
     Serial.println("--- alerta terminada ---");
   }
-  enviarPasarela(w, e, clase, prob, empiezaAlerta, terminaAlerta);
+  enviarPasarela(w, e, todos, clase, prob, empiezaAlerta, terminaAlerta);
 
 #if USAR_VOZ
-  if (empiezaAlerta) vozReproducir();
+  if (empiezaAlerta && vozActiva) vozReproducir();
 #endif
 #if USAR_PANTALLA
   pantallaResultado(clase, prob[2], alertaActiva, w.aparatos, numVentana, totalAlertas);
@@ -338,7 +343,8 @@ void setup() {
   Serial.setTxTimeoutMs(0);   // sin PC conectado, no se queda esperando al imprimir
 #endif
 #if USAR_PASARELA
-  Serial1.setTxBufferSize(1024);
+  Serial1.setTxBufferSize(2048);
+  Serial1.setRxBufferSize(4096);   // el modelo nuevo llega en una linea de ~2 KB
   Serial1.begin(115200, SERIAL_8N1, PIN_RX_PASARELA, PIN_TX_PASARELA);
 #endif
   delay(1500);
@@ -352,13 +358,16 @@ void setup() {
   pantallaArranqueTitulo();
 #endif
 
-  const char* falta = rasgosPrepararMapa(DETECTOR_RASGOS, DETECTOR_N_RASGOS, mapaRasgos);
-  if (falta) {
-    Serial.printf("# ERROR: el modelo pide el rasgo '%s' y este firmware no lo calcula\n", falta);
+  memoriaCargar();
+  if (!modeloListo) {
+    Serial.println("# ERROR: el modelo pide un rasgo que este firmware no calcula");
+  } else if (modelo.version == 0) {
+    Serial.printf("# Modelo de fabrica: %d rasgos, clases fondo / bluetooth / dron\n", (int)modelo.n);
   } else {
-    modeloListo = true;
-    Serial.printf("# Modelo: %d rasgos, clases fondo / bluetooth / dron\n", DETECTOR_N_RASGOS);
+    Serial.printf("# Modelo v%lu (cargado desde la app): %d rasgos, exactitud %.1f %%\n",
+                  (unsigned long)modelo.version, (int)modelo.n, modelo.exactitud * 100);
   }
+  Serial.printf("# Alerta con %d ventanas seguidas de dron; se apaga con %d sin dron\n", ventanasAlerta, ventanasApagar);
 
   bool nrfOk = iniciarNRF();
   if (nrfOk) {
@@ -374,7 +383,7 @@ void setup() {
   Serial.println("# Listo: una linea cada 2 s");
 #if USAR_PANTALLA
   char rasgosTxt[12];
-  snprintf(rasgosTxt, sizeof(rasgosTxt), "%d rasgos", DETECTOR_N_RASGOS);
+  snprintf(rasgosTxt, sizeof(rasgosTxt), "%d rasgos", (int)modelo.n);
   pantallaArranqueLinea("MODELO", modeloListo, rasgosTxt);
   pantallaArranqueLinea("NRF24", nrfOk, "126 canales");
   pantallaArranqueLinea("WIFI", true, "canales 1-13");
@@ -382,7 +391,10 @@ void setup() {
   pantallaArranqueFin();
 #endif
 #if USAR_VOZ
-  vozReproducir();   // suena una vez al arrancar: asi sabes que el parlante funciona
+  if (vozActiva) vozReproducir();   // suena una vez al arrancar: asi sabes que el parlante funciona
+#endif
+#if USAR_PASARELA
+  enviarFicha(Serial1);             // el devkit se entera de que modelo y ajustes hay
 #endif
   inicioVentana = ultimoSalto = millis();
 }
@@ -411,6 +423,9 @@ void loop() {
 #endif
 #if USAR_VOZ
   vozActualizar(alertaActiva);
+#endif
+#if USAR_PASARELA
+  leerOrdenes(Serial1);
 #endif
   delay(2);
 }
