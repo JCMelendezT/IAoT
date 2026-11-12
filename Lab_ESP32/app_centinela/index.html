@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Centinela">
+<meta name="theme-color" content="#0b1114">
+<title>Centinela RF</title>
+<style>
+  /* Consola de campo: fondo grafito, texto claro, verde de estado y rojo solo para la alerta */
+  :root {
+    --fondo: #0b1114; --panel: #131c20; --linea: #24323a; --texto: #e6eef0; --suave: #8ea3ab;
+    --verde: #3ddc84; --azul: #5ab0ff; --ambar: #ffb547; --rojo: #ff4d4d;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--texto); font: 15px/1.45 var(--sans); }
+  body { padding: env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom)); }
+  header { position: sticky; top: 0; z-index: 5; background: var(--fondo); border-bottom: 1px solid var(--linea);
+           padding: 12px max(16px, env(safe-area-inset-left)) 10px; display: flex; align-items: center; gap: 10px; }
+  header h1 { margin: 0; font: 600 15px var(--mono); letter-spacing: 2px; flex: 1; }
+  .pill { font: 600 11px var(--mono); padding: 3px 9px; border-radius: 99px; border: 1px solid var(--linea); color: var(--suave); }
+  .pill.ok { color: var(--verde); border-color: color-mix(in srgb, var(--verde) 40%, transparent); }
+  .pill.mal { color: var(--rojo); border-color: color-mix(in srgb, var(--rojo) 40%, transparent); }
+  main { padding: 14px max(16px, env(safe-area-inset-left)) 20px max(16px, env(safe-area-inset-right)); display: grid; gap: 12px; max-width: 640px; margin: 0 auto; }
+  section[data-vista] { display: none; gap: 12px; }
+  section[data-vista].activa { display: grid; }
+  .panel { background: var(--panel); border: 1px solid var(--linea); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+  .panel h2 { margin: 0; font: 600 11px var(--mono); letter-spacing: 1.5px; text-transform: uppercase; color: var(--suave); }
+  .nota { color: var(--suave); font-size: 13px; margin: 0; }
+  .estado { text-align: center; padding: 22px 14px; }
+  .estado .titulo { font: 700 30px var(--mono); letter-spacing: 1px; }
+  .estado.alerta { background: color-mix(in srgb, var(--rojo) 22%, var(--panel)); border-color: var(--rojo); animation: latir 1s infinite; }
+  @keyframes latir { 50% { background: color-mix(in srgb, var(--rojo) 8%, var(--panel)); } }
+  @media (prefers-reduced-motion: reduce) { .estado.alerta { animation: none; } }
+  .barra { display: grid; grid-template-columns: 82px 1fr 44px; align-items: center; gap: 8px; font-size: 13px; }
+  .barra .riel { height: 10px; background: var(--linea); border-radius: 6px; overflow: hidden; }
+  .barra .riel i { display: block; height: 100%; width: 0; border-radius: 6px; transition: width .4s; }
+  .barra b { text-align: right; font: 600 13px var(--mono); }
+  .datos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .dato { background: var(--fondo); border: 1px solid var(--linea); border-radius: 10px; padding: 9px 10px; min-width: 0; }
+  .dato span { display: block; color: var(--suave); font-size: 11px; text-transform: uppercase; letter-spacing: .8px; }
+  .dato b { font: 600 15px var(--mono); overflow-wrap: anywhere; }
+  canvas { width: 100%; display: block; }
+  button, select, input { font: inherit; color: var(--texto); }
+  button { background: var(--linea); border: 1px solid transparent; border-radius: 10px; padding: 11px 14px; font-weight: 600; cursor: pointer; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+  button.primario { background: var(--verde); color: #04140b; }
+  button.peligro { background: transparent; border-color: var(--rojo); color: var(--rojo); }
+  button:disabled { opacity: .5; }
+  select, input { background: var(--fondo); border: 1px solid var(--linea); border-radius: 10px; padding: 10px; width: 100%; min-width: 0; }
+  .fila { display: flex; gap: 8px; flex-wrap: wrap; }
+  .fila > * { flex: 1 1 140px; }
+  .clases { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .clases button { padding: 16px 6px; border: 1px solid var(--linea); background: var(--fondo); }
+  .clases button[aria-pressed="true"] { border-color: var(--verde); background: color-mix(in srgb, var(--verde) 14%, var(--fondo)); }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--suave); }
+  ul.eventos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+  ul.eventos li { display: flex; gap: 10px; } ul.eventos time { color: var(--suave); font-family: var(--mono); min-width: 52px; }
+  table { border-collapse: collapse; font: 13px var(--mono); }
+  td, th { border: 1px solid var(--linea); padding: 5px 8px; text-align: center; }
+  th { color: var(--suave); font-weight: 600; }
+  .tabla { overflow-x: auto; }
+  .msg { font-size: 13px; min-height: 18px; margin: 0; }
+  .msg.ok { color: var(--verde); } .msg.mal { color: var(--rojo); }
+  .leyenda { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--suave); }
+  .leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 5; background: color-mix(in srgb, var(--fondo) 92%, black);
+        border-top: 1px solid var(--linea); display: grid; grid-template-columns: repeat(5, 1fr);
+        padding: 6px max(8px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)); }
+  nav button { background: none; border: 0; padding: 8px 2px; font: 600 11px var(--sans); color: var(--suave); border-radius: 8px; }
+  nav button[aria-current="page"] { color: var(--verde); background: var(--panel); }
+  .confirmar { display: none; gap: 8px; }
+  .confirmar.ver { display: flex; }
+</style>
+</head>
+<body>
+<header>
+  <h1>CENTINELA&nbsp;RF</h1>
+  <span id="pillS3" class="pill">conectando…</span>
+</header>
+
+<main>
+  <!-- ============================ EN VIVO ============================ -->
+  <section data-vista="vivo" class="activa">
+    <div id="tarjetaEstado" class="panel estado">
+      <div id="estadoTitulo" class="titulo">—</div>
+      <p id="estadoSub" class="nota">Esperando al detector</p>
+    </div>
+    <div class="panel">
+      <h2>Lo que piensa el modelo</h2>
+      <div class="barra"><span>Fondo</span><div class="riel"><i id="bFondo" style="background:var(--verde)"></i></div><b id="pFondo">–</b></div>
+      <div class="barra"><span>Bluetooth</span><div class="riel"><i id="bBt" style="background:var(--azul)"></i></div><b id="pBt">–</b></div>
+      <div class="barra"><span>Dron</span><div class="riel"><i id="bDron" style="background:var(--rojo)"></i></div><b id="pDron">–</b></div>
+      <canvas id="graficaVivo" height="90" aria-label="Probabilidad de dron en los últimos 5 minutos"></canvas>
+      <p class="nota">Probabilidad de dron, últimos 5 minutos. La línea punteada es el 50 %.</p>
+    </div>
+    <div class="panel">
+      <h2>Detector</h2>
+      <div class="datos">
+        <div class="dato"><span>Ventana</span><b id="dVentana">–</b></div>
+        <div class="dato"><span>Alertas</span><b id="dAlertas">–</b></div>
+        <div class="dato"><span>Modelo</span><b id="dModelo">–</b></div>
+        <div class="dato"><span>Caja negra</span><b id="dMemoria">–</b></div>
+        <div class="dato"><span>Red</span><b id="dRed">–</b></div>
+        <div class="dato"><span>AWS</span><b id="dAws">–</b></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Últimos eventos</h2>
+      <ul id="eventos" class="eventos"><li>Sin eventos todavía.</li></ul>
+    </div>
+  </section>
+
+  <!-- ============================ GRABAR ============================ -->
+  <section data-vista="grabar">
+    <div class="panel">
+      <h2>Grabar una sesión</h2>
+      <p class="nota">Dile al detector qué está pasando de verdad. Todo lo que grabe mientras tanto queda marcado con esa clase y sirve para reentrenar.</p>
+      <div class="clases" role="group" aria-label="Clase">
+        <button type="button" data-clase="fondo" aria-pressed="true">Fondo<br><small class="nota">nada especial</small></button>
+        <button type="button" data-clase="bluetooth" aria-pressed="false">Bluetooth<br><small class="nota">audífonos, parlante</small></button>
+        <button type="button" data-clase="dron" aria-pressed="false">Dron<br><small class="nota">control en 2,4 GHz</small></button>
+      </div>
+      <label for="duracion">Duración
+        <select id="duracion">
+          <option value="2">2 minutos</option>
+          <option value="5">5 minutos</option>
+          <option value="10" selected>10 minutos</option>
+          <option value="30">30 minutos</option>
+          <option value="60">1 hora</option>
+          <option value="480">Toda la noche (8 horas)</option>
+        </select>
+      </label>
+      <div class="fila">
+        <button id="btnGrabar" class="primario" type="button">Empezar a grabar</button>
+        <button id="btnParar" type="button">Parar</button>
+      </div>
+      <p id="msgGrabar" class="msg"></p>
+    </div>
+    <div class="panel">
+      <h2>Consejos</h2>
+      <p class="nota"><b>Falsas alarmas de noche:</b> antes de dormir elige <b>Fondo</b> y <b>Toda la noche</b>. Si alguna vez sonó sin dron, ve a <b>Datos</b> y marca ese rato como Fondo.</p>
+      <p class="nota"><b>Dron:</b> prende el control en 2,4 GHz y graba 5 a 10 minutos a distintas distancias (1, 3, 5 m…), en tierra y volando.</p>
+      <p class="nota">Graba en días, horas y lugares distintos: así el modelo aprende el dron y no "la hora" o "la casa".</p>
+    </div>
+  </section>
+
+  <!-- ============================ DATOS ============================ -->
+  <section data-vista="datos">
+    <div class="panel">
+      <h2>Lo que grabó la caja negra</h2>
+      <label for="horas">Ver
+        <select id="horas">
+          <option value="3">últimas 3 horas</option>
+          <option value="6">últimas 6 horas</option>
+          <option value="12" selected>últimas 12 horas</option>
+          <option value="24">últimas 24 horas</option>
+        </select>
+      </label>
+      <canvas id="lineaTiempo" height="150" aria-label="Línea de tiempo por minuto"></canvas>
+      <div class="leyenda">
+        <span><i style="background:var(--rojo)"></i>dijo dron</span>
+        <span><i style="background:var(--ambar)"></i>alerta</span>
+        <span><i style="background:var(--linea)"></i>grabado</span>
+        <span>Franja de abajo = etiqueta:</span>
+        <span><i style="background:var(--verde)"></i>fondo</span>
+        <span><i style="background:var(--azul)"></i>bluetooth</span>
+        <span><i style="background:var(--rojo)"></i>dron</span>
+      </div>
+      <p id="resumenDatos" class="nota"></p>
+    </div>
+    <div class="panel">
+      <h2>Etiquetar un rato</h2>
+      <p class="nota">Marca qué pasó de verdad entre dos horas. Por ejemplo: anoche, de 10 p. m. a 6 a. m., no hubo dron → Fondo.</p>
+      <div class="fila">
+        <label for="desde">Desde<input id="desde" type="datetime-local"></label>
+        <label for="hasta">Hasta<input id="hasta" type="datetime-local"></label>
+      </div>
+      <label for="claseEtiqueta">Era
+        <select id="claseEtiqueta">
+          <option value="fondo">Fondo (no había dron)</option>
+          <option value="bluetooth">Bluetooth</option>
+          <option value="dron">Dron</option>
+          <option value="ninguna">Quitar la etiqueta</option>
+        </select>
+      </label>
+      <div class="fila">
+        <button id="btnAnoche" type="button">Anoche 10 p. m. – 6 a. m.</button>
+        <button id="btnEtiquetar" class="primario" type="button">Etiquetar</button>
+      </div>
+      <p id="msgEtiquetar" class="msg"></p>
+    </div>
+    <div class="panel">
+      <h2>Archivo</h2>
+      <div class="fila">
+        <button id="btnDescargar" type="button">Descargar CSV</button>
+        <button id="btnBorrar" class="peligro" type="button">Borrar todo</button>
+      </div>
+      <div id="confirmarBorrar" class="confirmar">
+        <button id="btnBorrarSi" class="peligro" type="button">Sí, borrar los datos</button>
+        <button id="btnBorrarNo" type="button">Cancelar</button>
+      </div>
+      <p id="msgArchivo" class="msg"></p>
+    </div>
+  </section>
+
+  <!-- ============================ MODELO ============================ -->
+  <section data-vista="modelo">
+    <div class="panel">
+      <h2>Modelo en el detector</h2>
+      <div class="datos">
+        <div class="dato"><span>Versión</span><b id="mVersion">–</b></div>
+        <div class="dato"><span>Exactitud</span><b id="mExactitud">–</b></div>
+        <div class="dato"><span>Rasgos</span><b id="mRasgos">–</b></div>
+        <div class="dato"><span>Mira</span><b>solo espectro</b></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Reentrenar en este celular</h2>
+      <p class="nota">Junta las grabaciones del PC (las del 10 de noviembre, se bajan de GitHub una vez) con lo que etiquetaste aquí, entrena un modelo nuevo y lo evalúa sin hacer trampa (nunca prueba con un minuto que usó para aprender).</p>
+      <label><span><input id="usarBase" type="checkbox" checked style="width:auto"> Incluir las grabaciones del PC (recomendado)</span></label>
+      <button id="btnEntrenar" class="primario" type="button">Reentrenar</button>
+      <p id="msgEntrenar" class="msg"></p>
+      <div id="resultado" hidden>
+        <div class="datos">
+          <div class="dato"><span>Exactitud nueva</span><b id="rExactitud">–</b></div>
+          <div class="dato"><span>Ejemplos</span><b id="rEjemplos">–</b></div>
+          <div class="dato"><span>Falsas alarmas</span><b id="rFalsas">–</b></div>
+          <div class="dato"><span>Con regla de alerta</span><b id="rFalsas2">–</b></div>
+        </div>
+        <div class="tabla"><table id="rMatriz"></table></div>
+        <p class="nota">Filas = lo que era; columnas = lo que dijo el modelo.</p>
+        <button id="btnEnviar" class="primario" type="button">Enviar este modelo al detector</button>
+        <p id="msgEnviar" class="msg"></p>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Volver atrás</h2>
+      <p class="nota">Vuelve al modelo con el que se subió el firmware.</p>
+      <button id="btnFabrica" class="peligro" type="button">Usar el modelo de fábrica</button>
+      <p id="msgFabrica" class="msg"></p>
+    </div>
+  </section>
+
+  <!-- ============================ AJUSTES ============================ -->
+  <section data-vista="ajustes">
+    <div class="panel">
+      <h2>Alerta</h2>
+      <label for="ajAlerta">Encender la alerta tras
+        <select id="ajAlerta" data-clave="alerta">
+          <option value="1">1 ventana de dron (2 s, más sensible)</option>
+          <option value="2">2 ventanas seguidas (4 s)</option>
+          <option value="3">3 ventanas seguidas (6 s)</option>
+          <option value="4">4 ventanas seguidas (8 s)</option>
+          <option value="5">5 ventanas seguidas (10 s, menos falsas alarmas)</option>
+        </select>
+      </label>
+      <label for="ajApagar">Apagarla tras
+        <select id="ajApagar" data-clave="apagar">
+          <option value="1">1 ventana sin dron</option>
+          <option value="2">2 ventanas sin dron</option>
+          <option value="5">5 ventanas sin dron</option>
+          <option value="10">10 ventanas sin dron</option>
+        </select>
+      </label>
+    </div>
+    <div class="panel">
+      <h2>Sonido</h2>
+      <label for="ajVoz">Parlante
+        <select id="ajVoz" data-clave="voz"><option value="1">Encendido</option><option value="0">Silencio</option></select>
+      </label>
+      <label for="ajRepetir">Repetir el aviso cada
+        <select id="ajRepetir" data-clave="repetir">
+          <option value="3">3 s</option><option value="5">5 s</option><option value="10">10 s</option><option value="30">30 s</option>
+        </select>
+      </label>
+      <button id="btnProbarVoz" type="button">Probar el sonido</button>
+      <p id="msgAjustes" class="msg"></p>
+    </div>
+    <div class="panel">
+      <h2>Acerca de</h2>
+      <p class="nota">Detector pasivo de drones en 2,4 GHz: escucha con un nRF24 y el WiFi del ESP32-S3, decide con un modelo pequeño dentro de la placa y no transmite nada para interferir. Esta app la sirve el ESP32 devkit.</p>
+      <p class="nota" id="acercaHora"></p>
+    </div>
+  </section>
+</main>
+
+<nav aria-label="Secciones">
+  <button type="button" data-ir="vivo" aria-current="page">En vivo</button>
+  <button type="button" data-ir="grabar">Grabar</button>
+  <button type="button" data-ir="datos">Datos</button>
+  <button type="button" data-ir="modelo">Modelo</button>
+  <button type="button" data-ir="ajustes">Ajustes</button>
+</nav>
+
+<script>
+/*ENTRENAMIENTO*/
+</script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const URL_BASE = "https://raw.githubusercontent.com/JCMelendezT/IAoT/main/proyecto-detector-drones/captura-datos/procesado/ventanas.csv";
+const NOMBRE_CLASE = ["DESPEJADO", "BLUETOOTH", "POSIBLE DRON"];
+let estado = null;
+let historialVivo = [];          // [ms, pDron]
+let modeloNuevo = null, validacionNueva = null;
+let ultimoHistorial = null;
+
+// ---------------------------------------------------------------- utilidades
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function pct(x) { return Math.round(x * 100) + " %"; }
+function horaCorta(epoch) { return new Date(epoch * 1000).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }); }
+function hora24(epoch) { return new Date(epoch * 1000).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: false }); }
+function ancho(x) { return Math.round(x * 100) + "%"; }
+function mensaje(id, texto, ok) { const el = $(id); el.textContent = texto; el.className = "msg" + (ok === true ? " ok" : ok === false ? " mal" : ""); }
+async function api(ruta, opciones) {
+  const r = await fetch(ruta, opciones);
+  const tipo = r.headers.get("content-type") || "";
+  const cuerpo = tipo.includes("json") ? await r.json() : await r.text();
+  if (!r.ok) throw new Error((cuerpo && cuerpo.detalle) || (cuerpo && cuerpo.error) || ("error " + r.status));
+  return cuerpo;
+}
+const post = (ruta, cuerpo) => api(ruta, { method: "POST", headers: { "Content-Type": "text/plain" }, body: cuerpo || "" });
+function aLocal(epoch) { const d = new Date(epoch * 1000); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); }
+function deLocal(valor) { return Math.floor(new Date(valor).getTime() / 1000); }
+
+// ---------------------------------------------------------------- navegación
+document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach((x) => x.removeAttribute("aria-current"));
+  b.setAttribute("aria-current", "page");
+  document.querySelectorAll("section[data-vista]").forEach((s) => s.classList.toggle("activa", s.dataset.vista === b.dataset.ir));
+  if (b.dataset.ir === "datos") cargarHistorial();
+  window.scrollTo(0, 0);
+}));
+
+// ---------------------------------------------------------------- en vivo
+async function refrescar() {
+  try {
+    estado = await api("/api/estado");
+    if (!estado.epoch) post("/api/hora?epoch=" + Math.floor(Date.now() / 1000)).catch(() => {});
+    pintarEstado();
+  } catch (e) {
+    $("pillS3").textContent = "sin conexión"; $("pillS3").className = "pill mal";
+  }
+}
+
+function pintarEstado() {
+  const s = estado.s3;
+  $("pillS3").textContent = s.vivo ? "detector en línea" : "S3 sin datos";
+  $("pillS3").className = "pill " + (s.vivo ? "ok" : "mal");
+  const tarjeta = $("tarjetaEstado");
+  if (!s.vivo || s.clase < 0) {
+    $("estadoTitulo").textContent = "—"; $("estadoSub").textContent = "No llegan datos del S3. Revisa el cable GPIO 17 del S3 → GPIO 16 del devkit.";
+    tarjeta.classList.remove("alerta"); $("estadoTitulo").style.color = "";
+  } else if (s.alerta) {
+    $("estadoTitulo").textContent = "ALERTA: DRON"; $("estadoTitulo").style.color = css("--rojo");
+    $("estadoSub").textContent = "Control de dron en 2,4 GHz cerca del detector";
+    tarjeta.classList.add("alerta");
+  } else {
+    tarjeta.classList.remove("alerta");
+    $("estadoTitulo").textContent = NOMBRE_CLASE[s.clase];
+    $("estadoTitulo").style.color = css(["--verde", "--azul", "--ambar"][s.clase]);
+    $("estadoSub").textContent = ["Espectro normal", "RF civil, sin amenaza", "Confirmando…"][s.clase];
+  }
+  const [pf, pb, pd] = s.prob;
+  $("bFondo").style.width = ancho(pf); $("pFondo").textContent = pct(pf);
+  $("bBt").style.width = ancho(pb); $("pBt").textContent = pct(pb);
+  $("bDron").style.width = ancho(pd); $("pDron").textContent = pct(pd);
+  if (s.vivo) { historialVivo.push([Date.now(), pd]); historialVivo = historialVivo.filter((h) => Date.now() - h[0] < 300000); }
+  dibujarVivo();
+
+  $("dVentana").textContent = "#" + s.ventana;
+  $("dAlertas").textContent = s.alertas;
+  const m = estado.modelo;
+  const textoModelo = !m.conocido ? "–" : m.version === 0 ? "de fábrica" : "v" + new Date(m.version * 1000).toLocaleDateString("es-CO");
+  $("dModelo").textContent = textoModelo;
+  const horasGuardadas = (estado.almacen.registros * 2 / 3600).toFixed(1);
+  $("dMemoria").textContent = horasGuardadas + " de " + estado.almacen.horas_max + " h";
+  $("dRed").textContent = estado.wifi.modo === "ap" ? "propia " + estado.wifi.ip : "casa " + estado.wifi.rssi + " dBm";
+  $("dAws").textContent = estado.aws ? (estado.aws.conectado ? "conectado" : "apagado") : "no usado";
+  $("eventos").innerHTML = estado.eventos.length
+    ? estado.eventos.map((e) => "<li><time>" + (e.epoch ? horaCorta(e.epoch) : "--:--") + "</time><span>" + e.texto.replace(/[<&]/g, "") + "</span></li>").join("")
+    : "<li>Sin eventos todavía.</li>";
+
+  $("mVersion").textContent = textoModelo;
+  $("mExactitud").textContent = m.conocido && m.exactitud ? pct(m.exactitud) : (m.version === 0 ? "97 %" : "–");
+  $("mRasgos").textContent = m.conocido ? m.rasgos : "–";
+
+  const g = estado.grabacion;
+  if (g.etiqueta) mensaje("msgGrabar", "Grabando " + g.etiqueta.toUpperCase() + " · quedan " + Math.ceil(g.restante / 60) + " min", true);
+  else if ($("msgGrabar").textContent.startsWith("Grabando")) mensaje("msgGrabar", "Grabación terminada.");
+
+  const aj = estado.ajustes;
+  for (const [id, v] of [["ajAlerta", aj.alerta], ["ajApagar", aj.apagar], ["ajVoz", aj.voz], ["ajRepetir", aj.repetir]]) {
+    const sel = $(id);
+    if (document.activeElement !== sel && [...sel.options].some((o) => o.value === String(v))) sel.value = String(v);
+  }
+  $("acercaHora").textContent = estado.epoch ? "Hora del detector: " + new Date(estado.epoch * 1000).toLocaleString("es-CO") : "El detector aún no tiene la hora.";
+}
+
+function prepararCanvas(cv) {
+  const r = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.height / (cv._r || 1);
+  cv._r = r; cv.width = w * r; cv.height = h * r; cv.style.height = h + "px";
+  const c = cv.getContext("2d"); c.scale(r, r);
+  return { c, w, h };
+}
+
+function dibujarVivo() {
+  const { c, w, h } = prepararCanvas($("graficaVivo"));
+  c.clearRect(0, 0, w, h);
+  c.strokeStyle = css("--linea"); c.setLineDash([4, 4]); c.beginPath(); c.moveTo(0, h / 2); c.lineTo(w, h / 2); c.stroke(); c.setLineDash([]);
+  if (historialVivo.length < 2) return;
+  const t0 = Date.now() - 300000;
+  c.strokeStyle = css("--rojo"); c.lineWidth = 2; c.beginPath();
+  historialVivo.forEach(([t, p], i) => { const x = (t - t0) / 300000 * w, y = h - 4 - p * (h - 8); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+  c.stroke();
+}
+
+// ---------------------------------------------------------------- grabar
+let claseGrabar = "fondo";
+document.querySelectorAll(".clases button").forEach((b) => b.addEventListener("click", () => {
+  claseGrabar = b.dataset.clase;
+  document.querySelectorAll(".clases button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+}));
+$("btnGrabar").addEventListener("click", async () => {
+  try { await post("/api/grabar?clase=" + claseGrabar + "&minutos=" + $("duracion").value); mensaje("msgGrabar", "Grabando " + claseGrabar.toUpperCase() + "…", true); refrescar(); }
+  catch (e) { mensaje("msgGrabar", e.message, false); }
+});
+$("btnParar").addEventListener("click", async () => {
+  try { await post("/api/grabar?clase=ninguna&minutos=0"); mensaje("msgGrabar", "Grabación detenida."); refrescar(); }
+  catch (e) { mensaje("msgGrabar", e.message, false); }
+});
+
+// ---------------------------------------------------------------- datos
+$("horas").addEventListener("change", cargarHistorial);
+async function cargarHistorial() {
+  try {
+    ultimoHistorial = await api("/api/historial?horas=" + $("horas").value);
+    dibujarLineaTiempo();
+  } catch (e) { $("resumenDatos").textContent = "No se pudo leer la caja negra: " + e.message; }
+}
+
+function dibujarLineaTiempo() {
+  const hist = ultimoHistorial; if (!hist) return;
+  const { c, w, h } = prepararCanvas($("lineaTiempo"));
+  c.clearRect(0, 0, w, h);
+  const n = hist.min.length, bw = w / n, alto = h - 34;
+  const colEtiq = [null, css("--verde"), css("--azul"), css("--rojo")];
+  let grabados = 0, conDron = 0, etiquetados = [0, 0, 0, 0];
+  hist.min.forEach(([cuenta, dron, alerta, , etiq], i) => {
+    const x = i * bw;
+    if (cuenta) { c.fillStyle = css("--linea"); c.fillRect(x, alto - 6, Math.max(bw, 1), 6); grabados += cuenta; }
+    if (dron) { const hh = (dron / cuenta) * (alto - 10); c.fillStyle = alerta ? css("--ambar") : css("--rojo"); c.fillRect(x, alto - 6 - hh, Math.max(bw, 1), hh); conDron += dron; }
+    if (etiq) { c.fillStyle = colEtiq[etiq]; c.fillRect(x, alto + 2, Math.max(bw, 1), 8); etiquetados[etiq] += cuenta; }
+  });
+  c.fillStyle = css("--suave"); c.font = "11px " + css("--mono");
+  // marcas en horas en punto, con al menos 56 px entre etiquetas
+  const horas = n / 60, pxHora = w / horas;
+  const paso = [1, 2, 3, 4, 6].find((p) => p * pxHora >= 56) || 6;
+  const primeraHora = Math.ceil(hist.inicio / 3600) * 3600;
+  for (let e = primeraHora; e <= hist.inicio + n * 60; e += 3600) {
+    const hh = new Date(e * 1000).getHours();
+    if (hh % paso) continue;
+    const x = (e - hist.inicio) / 60 * bw;
+    c.fillRect(x, alto + 12, 1, 4);
+    c.fillText(hora24(e), Math.min(Math.max(x - 16, 0), w - 34), h - 4);
+  }
+  $("resumenDatos").textContent = grabados
+    ? (grabados * 2 / 3600).toFixed(1) + " h grabadas · " + conDron + " ventanas dijeron dron · etiquetadas: " +
+      etiquetados[1] + " fondo, " + etiquetados[2] + " bluetooth, " + etiquetados[3] + " dron"
+    : "Todavía no hay datos en este rango.";
+}
+
+$("btnAnoche").addEventListener("click", () => {
+  const hoy = new Date(); const fin = new Date(hoy); fin.setHours(6, 0, 0, 0);
+  if (hoy < fin) fin.setDate(fin.getDate() - 1);
+  const ini = new Date(fin); ini.setDate(ini.getDate() - 1); ini.setHours(22, 0, 0, 0);
+  $("desde").value = aLocal(ini.getTime() / 1000); $("hasta").value = aLocal(fin.getTime() / 1000);
+  $("claseEtiqueta").value = "fondo";
+});
+$("btnEtiquetar").addEventListener("click", async () => {
+  if (!$("desde").value || !$("hasta").value) { mensaje("msgEtiquetar", "Elige desde y hasta.", false); return; }
+  try {
+    const r = await post("/api/etiquetar?desde=" + deLocal($("desde").value) + "&hasta=" + deLocal($("hasta").value) + "&clase=" + $("claseEtiqueta").value);
+    mensaje("msgEtiquetar", r.cambiados + " ventanas etiquetadas (" + (r.cambiados * 2 / 60).toFixed(0) + " min).", true);
+    cargarHistorial();
+  } catch (e) { mensaje("msgEtiquetar", e.message, false); }
+});
+$("btnDescargar").addEventListener("click", () => { location.href = "/api/datos"; });
+$("btnBorrar").addEventListener("click", () => $("confirmarBorrar").classList.add("ver"));
+$("btnBorrarNo").addEventListener("click", () => $("confirmarBorrar").classList.remove("ver"));
+$("btnBorrarSi").addEventListener("click", async () => {
+  $("confirmarBorrar").classList.remove("ver");
+  try { await post("/api/borrar_datos"); mensaje("msgArchivo", "Datos borrados.", true); cargarHistorial(); }
+  catch (e) { mensaje("msgArchivo", e.message, false); }
+});
+
+// ---------------------------------------------------------------- modelo
+async function datosBase() {
+  let texto = null;
+  try { texto = localStorage.getItem("centinela_base"); } catch (e) {}
+  if (!texto) {
+    const r = await fetch(URL_BASE);
+    if (!r.ok) throw new Error("no pude bajar las grabaciones del PC de GitHub (¿hay internet?)");
+    texto = await r.text();
+    try { localStorage.setItem("centinela_base", texto); } catch (e) {}
+  }
+  return Entrenamiento.ejemplosBase(Entrenamiento.leerCSV(texto));
+}
+
+$("btnEntrenar").addEventListener("click", async () => {
+  $("btnEntrenar").disabled = true; $("resultado").hidden = true;
+  try {
+    let ejemplos = [];
+    if ($("usarBase").checked) { mensaje("msgEntrenar", "Cargando las grabaciones del PC…"); ejemplos = await datosBase(); }
+    mensaje("msgEntrenar", "Leyendo lo que etiquetaste en el detector…");
+    const propios = Entrenamiento.ejemplosDispositivo(Entrenamiento.leerCSV(await api("/api/datos?etiquetados=1")));
+    ejemplos = ejemplos.concat(propios);
+    const porClase = [0, 1, 2].map((k) => ejemplos.filter((e) => e.y === k).length);
+    if (porClase.some((c) => c < 20)) throw new Error("hacen falta al menos 20 ventanas de cada clase (hay " + porClase.join(" / ") + "). Graba o etiqueta más.");
+    mensaje("msgEntrenar", "Entrenando con " + ejemplos.length + " ventanas (" + propios.length + " tuyas)…");
+    await new Promise((r) => setTimeout(r, 30));
+    const rasgos = Entrenamiento.elegirRasgos(ejemplos);
+    validacionNueva = Entrenamiento.validar(ejemplos, rasgos);
+    modeloNuevo = Entrenamiento.entrenar(ejemplos, rasgos);
+    const v = validacionNueva;
+    $("rExactitud").textContent = pct(v.exactitud);
+    $("rEjemplos").textContent = v.n + " (" + propios.length + " tuyas)";
+    $("rFalsas").textContent = v.falsasSueltas + " en " + v.horasSinDron.toFixed(1) + " h";
+    $("rFalsas2").textContent = String(v.falsasSeguidas);
+    const nom = ["fondo", "bluetooth", "dron"];
+    $("rMatriz").innerHTML = "<tr><th></th>" + nom.map((x) => "<th>" + x + "</th>").join("") + "</tr>" +
+      v.matriz.map((f, i) => "<tr><th>" + nom[i] + "</th>" + f.map((x) => "<td>" + x + "</td>").join("") + "</tr>").join("");
+    $("resultado").hidden = false;
+    const actual = estado && estado.modelo.conocido && estado.modelo.exactitud ? estado.modelo.exactitud : null;
+    mensaje("msgEntrenar", "Listo." + (actual ? " El del detector tenía " + pct(actual) + "." : "") +
+      " Revisa sobre todo las falsas alarmas antes de enviarlo.", true);
+  } catch (e) { mensaje("msgEntrenar", e.message, false); }
+  $("btnEntrenar").disabled = false;
+});
+
+$("btnEnviar").addEventListener("click", async () => {
+  if (!modeloNuevo) return;
+  $("btnEnviar").disabled = true;
+  try {
+    const linea = Entrenamiento.lineaModelo(modeloNuevo, Math.floor(Date.now() / 1000), validacionNueva.exactitud);
+    const r = await post("/api/modelo", linea);
+    mensaje("msgEnviar", "El detector ya usa el modelo nuevo (" + r.detalle + ").", true);
+    refrescar();
+  } catch (e) { mensaje("msgEnviar", "No se pudo: " + e.message, false); }
+  $("btnEnviar").disabled = false;
+});
+
+$("btnFabrica").addEventListener("click", async () => {
+  try { const r = await post("/api/modelo_fabrica"); mensaje("msgFabrica", "Listo: " + r.detalle, true); refrescar(); }
+  catch (e) { mensaje("msgFabrica", e.message, false); }
+});
+
+// ---------------------------------------------------------------- ajustes
+document.querySelectorAll("select[data-clave]").forEach((sel) => sel.addEventListener("change", async () => {
+  try { await post("/api/ajuste?clave=" + sel.dataset.clave + "&valor=" + sel.value); mensaje("msgAjustes", "Guardado en el detector.", true); refrescar(); }
+  catch (e) { mensaje("msgAjustes", e.message, false); }
+}));
+$("btnProbarVoz").addEventListener("click", async () => {
+  try { await post("/api/ajuste?clave=probar_voz&valor=1"); mensaje("msgAjustes", "Debería sonar el parlante.", true); }
+  catch (e) { mensaje("msgAjustes", e.message, false); }
+});
+
+window.addEventListener("resize", () => { dibujarVivo(); dibujarLineaTiempo(); });
+refrescar();
+setInterval(refrescar, 2000);
+</script>
+</body>
+</html>

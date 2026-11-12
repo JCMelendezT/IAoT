@@ -315,6 +315,13 @@ resource "local_sensitive_file" "certs_h" {
   })
 }
 
+# La misma configuracion para devkit_centinela (pasarela con la app del celular)
+resource "local_sensitive_file" "certs_h_centinela" {
+  filename        = abspath("${path.module}/../../Lab_ESP32/firmware/devkit_centinela/certs.h")
+  file_permission = "0600"
+  content         = local_sensitive_file.certs_h.content
+}
+
 resource "local_sensitive_file" "ca" {
   filename        = abspath("${path.module}/../../practica-3/certs/AmazonRootCA1.pem")
   file_permission = "0600"

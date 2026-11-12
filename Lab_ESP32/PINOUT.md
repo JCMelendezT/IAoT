@@ -39,6 +39,7 @@ Estado: **confirmado** (2026-10-19). Prueba de vida en Arduino IDE (`firmware/nr
 | ESP32-S3 | ESP32 devkit | Para qué |
 |---|---|---|
 | GPIO 17 (TX de UART1) | GPIO 16 (RX2) | el S3 manda cada ventana, la decisión del modelo y las alertas |
+| GPIO 18 (RX de UART1) | GPIO 17 (TX2) | órdenes de la app del celular: modelo nuevo y ajustes (desde 2026-11-12, con `devkit_centinela`) |
 | GND | GND | referencia común |
 
 Velocidad 115200. Las dos placas trabajan a 3,3 V. GPIO 18 del S3 queda reservado (sin conectar).
