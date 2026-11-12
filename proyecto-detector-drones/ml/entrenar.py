@@ -38,6 +38,9 @@ CARPETA_MODELOS = os.path.join(AQUI, "..", "modelos")
 CARPETA_RESULTADOS = os.path.join(AQUI, "..", "resultados")
 CARPETA_FIRMWARE = os.path.join(AQUI, "..", "..", "Lab_ESP32", "firmware", "nodo_detector")
 CLASES = ["fondo", "bluetooth", "dron"]
+# Con los rasgos del trafico WiFi el modelo aprendio "poco trafico = dron" y de noche, con la
+# casa quieta, daba falsas alarmas. Desde el 2026-11-12 se entrena solo con el espectro del nRF24.
+USAR_RASGOS_WIFI = False
 BLOQUES = 10                 # pliegues de la validacion por bloques de 1 minuto
 FRACCION_ENTRENO = 0.7
 SEPARACION_S = 10
@@ -157,6 +160,8 @@ def main():
     d = pd.read_csv(ENTRADA)
     d = d[d.clase.isin(CLASES)].reset_index(drop=True)
     rasgos = [r for r in R.RASGOS if d[r].std() > 0]   # fuera los que siempre valen lo mismo
+    if not USAR_RASGOS_WIFI:
+        rasgos = [r for r in rasgos if r not in R.RASGOS_WIFI]
     X, y = d[rasgos].values, d.clase.values
     t, ses = d.t.values, d.sesion.values
     grupos = (d.sesion + "_" + d.minuto.astype(str)).values
@@ -244,8 +249,9 @@ def main():
         "## Limites (van en el informe)",
         "",
         "- Todo se grabo el mismo dia, en el mismo sitio y a 1 m. No se sabe aun como responde a 3, 5 o 10 m, ni en otro lugar.",
-        "- Cada clase es una sola grabacion seguida: el modelo pudo aprender algo propio de esa hora (por ejemplo, cuanto trafico WiFi habia).",
-        "  El espectro solo, que no depende del trafico de la casa, llega a ~97 %, asi que la deteccion se apoya sobre todo en la banda del dron.",
+        "- Cada clase es una sola grabacion seguida: el modelo pudo aprender algo propio de esa hora.",
+        "  Paso con el trafico WiFi: con esos rasgos el modelo decia \"poco trafico = dron\" y de noche daba falsas alarmas.",
+        "  Por eso este modelo usa solo el espectro del nRF24 (USAR_RASGOS_WIFI = False en entrenar.py).",
         "- Solo detecta el Neo 2 con su control en 2,4 GHz; en 5,8 GHz o solo con el celular no se ve.",
         "",
     ]

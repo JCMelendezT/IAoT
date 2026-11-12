@@ -1,14 +1,5 @@
 {
   "rasgos": [
-    "tramas",
-    "aparatos",
-    "mgmt",
-    "datos",
-    "tam_prom",
-    "rssi_prom",
-    "rssi_max",
-    "tramas_debiles",
-    "aparatos_fuertes",
     "banda_2400",
     "banda_2406",
     "banda_2412",
@@ -29,10 +20,10 @@
     "esp_canales_activos",
     "esp_variacion"
   ],
-  "exactitud_bloques": 0.9929453262786596,
-  "exactitud_ultimo_30": 1.0,
+  "exactitud_bloques": 0.9744268077601411,
+  "exactitud_ultimo_30": 0.9912023460410557,
   "falsas_alarmas_bloques": [
-    0,
+    3,
     0
   ],
   "falsas_alarmas_ultimo_30": [
@@ -47,13 +38,13 @@
     ],
     [
       4,
-      296,
-      0
+      293,
+      3
     ],
     [
-      0,
-      1,
-      534
+      4,
+      15,
+      516
     ]
   ],
   "matriz_ultimo_30": [
@@ -68,9 +59,9 @@
       0
     ],
     [
-      0,
-      0,
-      161
+      1,
+      2,
+      158
     ]
   ]
 }

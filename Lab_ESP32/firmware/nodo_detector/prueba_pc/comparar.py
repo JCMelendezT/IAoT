@@ -18,6 +18,8 @@ import rasgos as R    # noqa: E402
 
 d = pd.read_csv(E.ENTRADA)
 rasgos = [r for r in R.RASGOS if d[r].std() > 0]
+if not E.USAR_RASGOS_WIFI:
+    rasgos = [r for r in rasgos if r not in R.RASGOS_WIFI]
 c = pd.read_csv(sys.argv[1], header=None, names=["sesion", "t"] + rasgos + ["p0", "p1", "p2", "clase_c"])
 m = d.merge(c, on=["sesion", "t"], suffixes=("", "_c"))
 modelo = E.nuevo_modelo().fit(d[rasgos].values, d.clase.values)
