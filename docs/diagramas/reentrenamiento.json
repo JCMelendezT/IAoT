@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Reentrenar el modelo desde el celular",
+    "locale": "es",
+    "output": "docs/diagramas/reentrenamiento.html",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "app", "type": "frontend", "label": "App en el iPhone", "sublabel": "Safari" },
+    { "id": "dk", "type": "backend", "label": "ESP32 devkit", "sublabel": "devkit_centinela" },
+    { "id": "fs", "type": "database", "label": "Caja negra", "sublabel": "LittleFS" },
+    { "id": "s3", "type": "backend", "label": "ESP32-S3", "sublabel": "nodo_detector" },
+    { "id": "nvs", "type": "database", "label": "NVS del S3", "sublabel": "modelo activo" }
+  ],
+  "segments": [
+    { "from": 160, "to": 300, "label": "1. Grabar con etiqueta" },
+    { "from": 316, "to": 530, "label": "2. Entrenar en el celular" },
+    { "from": 546, "to": 800, "label": "3. Instalar el modelo" }
+  ],
+  "messages": [
+    { "from": "app", "to": "dk", "y": 180, "label": "POST /api/grabar?clase=fondo", "variant": "emphasis" },
+    { "from": "s3", "to": "dk", "y": 222, "label": "línea R cada 2 s", "variant": "emphasis", "note": "35 rasgos de la ventana" },
+    { "from": "dk", "to": "fs", "y": 280, "label": "guarda con la clase" },
+    { "from": "app", "to": "dk", "y": 340, "label": "GET /api/datos?etiquetados=1" },
+    { "from": "dk", "to": "fs", "y": 382, "label": "lee los registros" },
+    { "from": "fs", "to": "dk", "y": 424, "label": "registros", "variant": "return" },
+    { "from": "dk", "to": "app", "y": 466, "label": "CSV de rasgos", "variant": "return", "note": "La app lo junta con ventanas.csv, entrena y valida por minutos" },
+    { "from": "app", "to": "dk", "y": 570, "label": "POST /api/modelo (línea M)", "variant": "emphasis" },
+    { "from": "dk", "to": "s3", "y": 612, "label": "M,... por UART", "variant": "emphasis" },
+    { "from": "s3", "to": "nvs", "y": 654, "label": "guarda si el hash coincide", "note": "Si no coincide, sigue con el modelo anterior" },
+    { "from": "s3", "to": "dk", "y": 724, "label": "A,OK", "variant": "return" },
+    { "from": "dk", "to": "app", "y": 766, "label": "modelo nuevo activo", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "dk", "from": 174, "to": 288 },
+    { "participant": "dk", "from": 334, "to": 474 },
+    { "participant": "fs", "from": 376, "to": 430 },
+    { "participant": "dk", "from": 564, "to": 774 },
+    { "participant": "s3", "from": 606, "to": 732 }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Grabar", "items": ["Se elige la clase y los minutos; el devkit marca cada ventana que llega", "También se puede etiquetar después un rango de tiempo con /api/etiquetar", "Las ventanas de noche con falsas alarmas se graban como fondo"] },
+    { "dot": "cyan", "title": "Entrenar", "items": ["entrenamiento.js es la misma regresión logística de entrenar.py", "Entrenar tarda unos 30 ms y la validación completa unos 150 ms", "Funciona sin internet, en la red CENTINELA-RF"] },
+    { "dot": "orange", "title": "Instalar", "items": ["La línea M lleva los pesos y un hash FNV-1a", "El S3 guarda el modelo en NVS y lo carga al encender", "Con /api/modelo_fabrica se vuelve al modelo original"] }
+  ]
+}

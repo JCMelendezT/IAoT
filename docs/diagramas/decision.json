@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Cómo decide el S3 que hay un dron",
+    "locale": "es",
+    "output": "docs/diagramas/decision.html",
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    { "label": "Radio" },
+    { "label": "Ventana" },
+    { "label": "Rasgos" },
+    { "label": "Modelo" },
+    { "label": "Salida" }
+  ],
+  "nodes": [
+    { "id": "nrf", "type": "external", "label": "nRF24L01+", "sublabel": "RPD, 126 canales", "stage": 0, "row": 1, "tag": "solo recibe" },
+    { "id": "ventana", "type": "backend", "label": "Ventana de 2 s", "sublabel": "ocupación y máximo", "stage": 1, "row": 1, "tag": "por canal" },
+    { "id": "rasgos", "type": "backend", "label": "rasgos_detector.h", "sublabel": "19 del espectro", "stage": 2, "row": 1, "tag": "igual que en Python" },
+    { "id": "nvs", "type": "database", "label": "Modelo en NVS", "sublabel": "modelo_activo.h", "stage": 3, "row": 3, "tag": "se cambia por UART" },
+    { "id": "modelo", "type": "backend", "label": "Regresión logística", "sublabel": "fondo, bluetooth, dron", "stage": 3, "row": 1, "tag": "escalado + 3 clases" },
+    { "id": "voz", "type": "frontend", "label": "ISD1820", "sublabel": "mensaje de voz", "stage": 4, "row": 0, "tag": "local" },
+    { "id": "devkit", "type": "backend", "label": "ESP32 devkit", "sublabel": "app y nube", "stage": 4, "row": 2, "tag": "UART" }
+  ],
+  "flows": [
+    { "id": "barrido", "from": "nrf", "to": "ventana", "label": "barrido 2,4 GHz", "variant": "emphasis" },
+    { "id": "conteos", "from": "ventana", "to": "rasgos", "label": "126 valores", "variant": "emphasis" },
+    { "id": "vector", "from": "rasgos", "to": "modelo", "label": "vector de rasgos", "variant": "emphasis" },
+    { "id": "pesos", "from": "nvs", "to": "modelo", "label": "pesos y medias" },
+    { "id": "alerta", "from": "modelo", "to": "voz", "label": "2 ventanas dron", "variant": "emphasis" },
+    { "id": "lineas", "from": "modelo", "to": "devkit", "label": "líneas R y A" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Por qué solo el espectro", "items": ["Con los rasgos del WiFi el modelo aprendía que poco tráfico era dron", "De noche eso daba falsas alarmas; sin ellos desaparecieron", "Exactitud por bloques de 1 minuto: 97,4 %"] },
+    { "dot": "cyan", "title": "Mismo cálculo en el PC y en el S3", "items": ["rasgos.py y rasgos_detector.h usan los mismos tiempos del ESP32", "prueba_pc/comparar.py verifica que den lo mismo", "El modelo son 98 números (392 bytes)"] },
+    { "dot": "orange", "title": "Alerta", "items": ["Una sola ventana de dron no basta: hacen falta dos seguidas", "La voz suena aunque no haya red", "El devkit recibe cada ventana y cada cambio de alerta"] }
+  ]
+}

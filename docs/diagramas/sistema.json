@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Detector de drones · sistema completo",
+    "locale": "es",
+    "output": "docs/diagramas/sistema.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "dron", "type": "external", "label": "DJI Neo 2", "sublabel": "control en 2,4 GHz", "pos": [40, 200], "size": [150, 72] },
+    { "id": "s3", "type": "backend", "label": "ESP32-S3 · nodo_detector", "sublabel": "nRF24 126 canales · modelo", "pos": [270, 200], "size": [190, 72] },
+    { "id": "voz", "type": "frontend", "label": "ISD1820 + parlante", "sublabel": "mensaje de alerta", "pos": [270, 400], "size": [190, 64] },
+    { "id": "dk", "type": "backend", "label": "ESP32 devkit · centinela", "sublabel": "web, caja negra, MQTT", "pos": [620, 200], "size": [190, 72] },
+    { "id": "cel", "type": "frontend", "label": "iPhone · app web", "sublabel": "detector.local o 192.168.4.1", "pos": [620, 30], "size": [190, 64] },
+    { "id": "iot", "type": "messagebus", "label": "AWS IoT Core", "sublabel": "certificado X.509", "pos": [960, 200], "size": [180, 72] },
+    { "id": "ddb", "type": "database", "label": "DynamoDB", "sublabel": "lecturas y estado", "pos": [960, 400], "size": [180, 72] },
+    { "id": "tab", "type": "frontend", "label": "Tablero web", "sublabel": "S3 + API Gateway + Lambda", "pos": [960, 600], "size": [180, 72] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Casa", "wraps": ["s3", "voz", "dk"], "pad": 24 },
+    { "kind": "region", "label": "AWS Learner Lab · us-east-1", "wraps": ["iot", "ddb", "tab"], "pad": 24 }
+  ],
+  "connections": [
+    { "from": "dron", "to": "s3", "label": "RF 2,4 GHz", "variant": "emphasis" },
+    { "from": "s3", "to": "voz", "label": "GPIO PLAY" },
+    { "from": "s3", "to": "dk", "label": "UART líneas R, A", "variant": "emphasis" },
+    { "from": "cel", "to": "dk", "label": "HTTP" },
+    { "from": "dk", "to": "iot", "label": "MQTT TLS 8883", "variant": "emphasis" },
+    { "from": "iot", "to": "ddb", "label": "reglas" },
+    { "from": "tab", "to": "ddb", "label": "consulta" },
+    { "from": "tab", "to": "iot", "label": "comando actuador", "variant": "dashed", "fromSide": "right", "toSide": "right" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Decisión en el borde", "items": ["El S3 barre los 126 canales cada 2 s y calcula 19 rasgos del espectro", "La regresión logística corre en el S3; alerta tras 2 ventanas seguidas de dron", "Funciona sin internet: la voz suena aunque el devkit esté apagado"] },
+    { "dot": "cyan", "title": "Celular", "items": ["El devkit sirve la app, guarda la caja negra en LittleFS y recibe etiquetas", "Desde la app se reentrena y se envía el modelo nuevo al S3 por la UART", "Sin WiFi de la casa, el devkit crea la red CENTINELA-RF"] },
+    { "dot": "orange", "title": "Nube (opcional)", "items": ["Cada 5 s una lectura con clase y probabilidad del modelo", "Terraform crea todo y genera el certs.h del devkit", "Si no hay conexión, el devkit reintenta con espera creciente"] }
+  ]
+}
