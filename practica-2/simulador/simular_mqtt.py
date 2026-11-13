@@ -6,7 +6,7 @@ InfluxDB y Grafana sin tener las placas a mano.
 
 Uso (en Ubuntu, en tu PC):
     pip install --break-system-packages "paho-mqtt>=2,<3"   # una vez
-    python3 simular_mqtt.py --host 57.156.64.36 --usuario juan --clave TU_CLAVE
+    python3 simular_mqtt.py --host <IP publica de la VM> --usuario juan --clave TU_CLAVE
     python3 simular_mqtt.py ... --rapido          # sin esperar entre ventanas
     python3 simular_mqtt.py ... --dron            # sube la banda del dron para disparar la alerta
 
@@ -49,7 +49,7 @@ def nivel(espectro):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--host", default="57.156.64.36")
+    ap.add_argument("--host", required=True, help="IP publica de la VM con Mosquitto")
     ap.add_argument("--puerto", type=int, default=1883)
     ap.add_argument("--usuario", default="juan")
     ap.add_argument("--clave", required=True)

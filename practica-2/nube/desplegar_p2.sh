@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Practica 2: instala y configura todo en las dos VMs.
 #
-#   vm-iaot  (publica, 57.156.64.36): broker Mosquitto (1883, con usuario y clave),
+#   vm-iaot  (publica): broker Mosquitto (1883, con usuario y clave),
 #            puente MQTT -> InfluxDB + CSV (servicio puente-mqtt) y Grafana (3000).
 #   vm-influx (privada, 10.0.3.4):    InfluxDB 2 (8086), solo alcanzable desde vm-iaot.
 #

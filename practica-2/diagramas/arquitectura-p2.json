@@ -10,8 +10,8 @@
   "components": [
     { "id": "s3", "type": "backend", "label": "ESP32-S3 · nodo", "sublabel": "nRF24 + sniffer + regla local", "pos": [30, 250], "size": [176, 72] },
     { "id": "dk", "type": "backend", "label": "ESP32 devkit · cliente MQTT", "sublabel": "PubSubClient · usuario esp32", "pos": [300, 250], "size": [190, 72] },
-    { "id": "ip", "type": "cloud", "label": "IP pública estática", "sublabel": "57.156.64.36", "pos": [600, 250], "size": [170, 72] },
-    { "id": "yo", "type": "external", "label": "Tu PC", "sublabel": "MQTT Explorer · navegador · SSH", "pos": [590, 430], "size": [190, 72] },
+    { "id": "ip", "type": "cloud", "label": "IP pública estática", "sublabel": "ip-iaot", "pos": [600, 250], "size": [170, 72] },
+    { "id": "yo", "type": "external", "label": "Mi PC", "sublabel": "MQTT Explorer · navegador · SSH", "pos": [590, 430], "size": [190, 72] },
     { "id": "broker", "type": "messagebus", "label": "Mosquitto · broker MQTT", "sublabel": ":1883 · usuario y clave · ACL", "pos": [880, 110], "size": [210, 72] },
     { "id": "puente", "type": "backend", "label": "Puente MQTT → Influx + CSV", "sublabel": "puente_mqtt.py · systemd", "pos": [880, 250], "size": [210, 72] },
     { "id": "grafana", "type": "frontend", "label": "Grafana", "sublabel": ":3000 · tablero + alertas", "pos": [880, 390], "size": [210, 72] },
@@ -29,7 +29,7 @@
     { "from": "dk", "to": "ip", "label": "MQTT :1883 · detector1/nodo-s3/…", "variant": "emphasis" },
     { "from": "yo", "to": "ip", "label": "MQTT :1883 · Grafana :3000 · SSH :22", "variant": "security", "labelDx": 98 },
     { "from": "ip", "to": "broker", "label": "1883" },
-    { "from": "ip", "to": "grafana", "label": "3000 · solo tus IPs", "variant": "security" },
+    { "from": "ip", "to": "grafana", "label": "3000 · solo mis IPs", "variant": "security" },
     { "from": "broker", "to": "puente", "label": "suscrito a detector1/#" },
     { "from": "puente", "to": "influx", "label": "escribe :8086", "variant": "security" },
     { "from": "grafana", "to": "influx", "label": "consulta Flux :8086", "variant": "security", "toSide": "left", "labelDx": -57 },
@@ -51,7 +51,7 @@
       "title": "Seguridad",
       "items": [
         "Broker sin anónimos: usuarios esp32, puente y juan, cada uno con su ACL",
-        "nsg-app: 1883 desde Internet; 3000 y 22 solo desde tus IPs",
+        "nsg-app: 1883 desde Internet; 3000 y 22 solo desde mis IPs",
         "nsg-influx: 8086 y 22 solo desde 10.0.1.0/24; el resto negado",
         "InfluxDB no tiene IP pública: desde internet no existe"
       ]

@@ -2,7 +2,7 @@
 # Practica 2: agrega a la red de la Practica 1 lo que falta para MQTT + InfluxDB + Grafana.
 #
 # Reutiliza (NO toca): grupo rg-iaot-p1, red vnet-iaot, VM vm-iaot (subred publica app)
-# con su IP estatica 57.156.64.36, y todo lo de PostgreSQL.
+# con su IP estatica, y todo lo de PostgreSQL.
 #
 # Crea:
 #   - Subred PRIVADA influx 10.0.3.0/24, con su NSG nsg-influx:
@@ -86,5 +86,5 @@ EOF
 echo
 echo "LISTO."
 echo "  InfluxDB ira en vm-influx ($IP_INFLUX), sin IP publica."
-echo "  Broker MQTT: 57.156.64.36:1883   Grafana: http://57.156.64.36:3000 (solo desde tus IPs)"
+echo "  Broker MQTT: $IP_PUBLICA:1883   Grafana: http://$IP_PUBLICA:3000 (solo desde tus IPs)"
 echo "Siguiente paso: bash desplegar_p2.sh"
