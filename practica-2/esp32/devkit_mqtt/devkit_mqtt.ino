@@ -1,5 +1,5 @@
 /*
-  devkit_mqtt — Practica 2 (placa: ESP32 devkit, "ESP32 Dev Module")
+  devkit_mqtt: Practica 2 (placa: ESP32 devkit, "ESP32 Dev Module")
 
   Igual que devkit_pasarela de la Practica 1, pero en vez de HTTP publica por MQTT
   en el broker de la nube, con usuario y clave.

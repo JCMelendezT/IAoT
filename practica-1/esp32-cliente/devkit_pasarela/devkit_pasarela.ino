@@ -1,5 +1,5 @@
 /*
-  devkit_pasarela — Practica 1 (placa: ESP32 devkit, "ESP32 Dev Module")
+  devkit_pasarela: Practica 1 (placa: ESP32 devkit, "ESP32 Dev Module")
 
   Hace de "puente" entre el nodo S3 y el servidor:
     1. Se conecta al WiFi (datos en secrets.h, igual que devkit_latido).

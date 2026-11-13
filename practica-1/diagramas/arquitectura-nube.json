@@ -12,7 +12,7 @@
     { "id": "dk", "type": "backend", "label": "ESP32 devkit · pasarela", "sublabel": "solo WiFi", "pos": [330, 240], "size": [160, 72] },
     { "id": "nav", "type": "frontend", "label": "Navegador / celular", "pos": [660, 90], "size": [170, 64] },
     { "id": "ip", "type": "cloud", "label": "IP pública estática", "sublabel": "ip-iaot", "pos": [650, 240], "size": [170, 72] },
-    { "id": "yo", "type": "external", "label": "Tu PC · administración", "pos": [660, 400], "size": [170, 64] },
+    { "id": "yo", "type": "external", "label": "Mi PC · administración", "pos": [660, 400], "size": [170, 64] },
     { "id": "vm", "type": "backend", "label": "VM vm-iaot", "sublabel": "Ubuntu 24.04 · B2ats_v2 · FastAPI", "pos": [880, 240], "size": [180, 80] },
     { "id": "pgf", "type": "database", "label": "PostgreSQL Flexible Server", "sublabel": "B1MS · 32 GB · sin IP pública", "pos": [1130, 240], "size": [200, 84] },
     { "id": "dns", "type": "cloud", "label": "Zona DNS privada", "sublabel": "iaotdb.postgres.database.azure.com", "pos": [860, 70], "size": [240, 64] }
@@ -27,7 +27,7 @@
     { "from": "s3", "to": "dk", "label": "UART 115200", "variant": "emphasis" },
     { "from": "dk", "to": "ip", "label": "HTTP POST JSON :8000", "variant": "emphasis" },
     { "from": "nav", "to": "ip", "label": "http :8000", "variant": "emphasis" },
-    { "from": "yo", "to": "ip", "label": "SSH :22 · solo tu IP", "variant": "security" },
+    { "from": "yo", "to": "ip", "label": "SSH :22 · solo mi IP", "variant": "security" },
     { "from": "ip", "to": "vm" },
     { "from": "vm", "to": "pgf", "label": "5432", "variant": "security" },
     { "from": "vm", "to": "dns", "label": "resuelve el nombre", "variant": "dashed" }
@@ -47,7 +47,7 @@
       "title": "Reglas NSG",
       "items": [
         "nsg-app permite 8000 desde Internet",
-        "nsg-app permite 22 solo desde tu IP pública /32",
+        "nsg-app permite 22 solo desde mi IP pública /32",
         "nsg-db permite 5432 solo desde 10.0.1.0/24",
         "nsg-db niega el resto de la VNet"
       ]

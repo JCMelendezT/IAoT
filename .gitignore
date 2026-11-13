@@ -1,5 +1,5 @@
-# Material de clase pesado (queda solo en local)
-Recursos de clase/*.pdf
+# PDFs de las clases (pesados; quedan solo en local)
+docs/curso/clases/
 
 # Secretos y credenciales (WiFi, AWS, tokens)
 .env
@@ -17,7 +17,7 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
-# ESP-IDF / PlatformIO
+# Compilaciones
 build/
 sdkconfig.old
 managed_components/
@@ -25,14 +25,20 @@ managed_components/
 dependencies.lock
 
 # Capturas crudas y datos generados (se versiona solo el registro sesiones.csv)
-proyecto-detector-drones/captura-datos/raw/*
-!proyecto-detector-drones/captura-datos/raw/.gitkeep
+detector/captura-datos/raw/*
+!detector/captura-datos/raw/.gitkeep
 practica-1/datos/*.db
 practica-1/datos/*.sqlite
 
-# Caché de herramientas (OpenCode)
+# Cachés y notas locales de herramientas
 .atl/
 .archify/
+AGENTS.md
+PLAN.md
+skills-and-mcps.md
+00-indice.md
+.local/
+*.tgz
 
 # Sistema / editor
 .DS_Store
@@ -56,12 +62,12 @@ crash.log
 practica-3/certs/
 **/certs.h
 
-# Registros de revision de Archify (se versiona solo el diagrama .html/.json final)
-practica-2/diagramas/*.browser-check.json
-practica-2/diagramas/*.delivery.json
-practica-2/diagramas/*.finalize.json
-practica-2/diagramas/*.finalize-summary.json
+# Recibos de Archify (se versionan solo el .json y el .html del diagrama)
+*.browser-check.json
+*.delivery.json
+*.finalize.json
+*.finalize-summary.json
 
-# Proyectos de prueba locales de ESP-IDF (solo scaffold y compilaciones)
+# Pruebas locales de ESP-IDF que no se suben
 Proyecto AIoT/
-Lab_ESP32/firmware/smoke-test/
+Lab_ESP32/

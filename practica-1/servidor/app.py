@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Servidor de la Practica 1 — detector de drones.
+Servidor de la Practica 1: detector de drones.
 
 Recibe lo que manda el nodo (por el devkit que hace de pasarela) y lo guarda
 DOS veces: en archivos CSV (carpeta ../datos) y en PostgreSQL.
@@ -175,7 +175,7 @@ async def ciclo_de_vida(_app):
     yield
 
 
-app = FastAPI(title="Detector de drones — Practica 1", version="1.0", lifespan=ciclo_de_vida)
+app = FastAPI(title="Detector de drones: Practica 1", version="1.0", lifespan=ciclo_de_vida)
 
 
 @app.post("/api/latido")

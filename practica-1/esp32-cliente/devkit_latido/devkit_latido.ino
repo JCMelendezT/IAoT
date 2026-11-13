@@ -1,5 +1,5 @@
 /*
-  devkit_latido — Prueba de red de la Practica 1 (placa: ESP32 devkit, "ESP32 Dev Module")
+  devkit_latido: Prueba de red de la Practica 1 (placa: ESP32 devkit, "ESP32 Dev Module")
 
   Que hace:
     1. Se conecta al WiFi (nombre y clave en secrets.h).

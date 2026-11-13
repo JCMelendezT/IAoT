@@ -21,7 +21,7 @@
 //                              -> resumen WiFi de una ventana de 2 s (canal 0 = salto 1-13)
 //   # ...                      -> mensajes y notas, no son datos
 //
-// Conexiones: CE=9  CSN=10  MOSI=11  SCK=12  MISO=13  VCC=3V3  GND=GND (ver Lab_ESP32/PINOUT.md)
+// Conexiones: CE=9  CSN=10  MOSI=11  SCK=12  MISO=13  VCC=3V3  GND=GND (ver docs/hardware.md)
 // Cable al devkit: GPIO 17 del S3 -> GPIO 16 (RX2) del devkit, y GND con GND.
 
 #include <SPI.h>

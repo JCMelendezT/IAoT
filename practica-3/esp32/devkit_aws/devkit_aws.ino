@@ -1,5 +1,5 @@
 /*
-  devkit_aws — Practica 3 (placa: ESP32 devkit, "ESP32 Dev Module")
+  devkit_aws: Practica 3 (placa: ESP32 devkit, "ESP32 Dev Module")
 
   Misma idea de la Practica 2, pero hablando con AWS IoT Core (MQTT sobre TLS, puerto 8883,
   con certificado de la placa en vez de usuario y clave).
