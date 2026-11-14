@@ -382,7 +382,7 @@ function pintarEstado() {
   $("dModelo").textContent = textoModelo;
   const horasGuardadas = (estado.almacen.registros * 2 / 3600).toFixed(1);
   $("dMemoria").textContent = horasGuardadas + " de " + estado.almacen.horas_max + " h";
-  $("dRed").textContent = estado.wifi.modo === "ap" ? "propia " + estado.wifi.ip : "casa " + estado.wifi.rssi + " dBm";
+  $("dRed").textContent = estado.wifi.modo === "ap" ? "propia " + estado.wifi.ip : (estado.wifi.red || "WiFi") + " " + estado.wifi.ip + " (" + estado.wifi.rssi + " dBm)";
   $("dAws").textContent = estado.aws ? (estado.aws.conectado ? "conectado" : "apagado") : "no usado";
   $("eventos").innerHTML = estado.eventos.length
     ? estado.eventos.map((e) => "<li><time>" + (e.epoch ? horaCorta(e.epoch) : "--:--") + "</time><span>" + e.texto.replace(/[<&]/g, "") + "</span></li>").join("")

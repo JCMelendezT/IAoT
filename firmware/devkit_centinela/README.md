@@ -11,7 +11,7 @@ La pasarela del detector. Recibe por cable lo que decide el S3, lo guarda en su 
 
 ## En el celular
 
-En la casa: `http://detector.local` en Safari (si no carga, la IP que muestra el Monitor Serie). Fuera de la casa el devkit crea la red **CENTINELA-RF** (clave `centinela2026`) y la app queda en `http://192.168.4.1`; la primera vez la app le pasa la hora al devkit. Para tenerla como app: Compartir → Agregar a inicio.
+En la casa: `http://detector.local` en Safari (si no carga, la IP que muestra el Monitor Serie). Fuera de la casa, con internet compartido desde el celular: el devkit se une a esa red si está en `secrets.h` como `WIFI2_NOMBRE` y `WIFI2_CLAVE`. En el iPhone hay que activar Compartir Internet con "Maximizar compatibilidad", porque el ESP32 solo ve redes de 2,4 GHz, y dejar esa pantalla abierta mientras el devkit se conecta. La app se abre en la IP que muestra el Monitor Serie (suele ser `172.20.10.2`) y AWS funciona con los datos del celular. Si no encuentra ninguna red conocida, el devkit crea la red **CENTINELA-RF** (clave `centinela2026`) y la app queda en `http://192.168.4.1`, sin internet; cada minuto, si nadie está conectado a esa red, vuelve a buscar las conocidas. La primera vez la app le pasa la hora al devkit. Para tenerla como app: Compartir → Agregar a inicio.
 
 La app tiene cinco pestañas:
 

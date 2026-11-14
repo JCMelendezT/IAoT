@@ -25,6 +25,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
+#include <WiFiMulti.h>
 #include <time.h>
 #include <sys/time.h>
 #include "secrets.h"
@@ -51,6 +52,7 @@ const char* NOMBRE_MDNS = "detector";          // http://detector.local
 
 WebServer web(80);
 bool modoAP = false;
+WiFiMulti redes;                               // casa, celular y las que haya en secrets.h
 
 // ------------------------------------------------------------------ estado en vivo
 struct EstadoS3 {
@@ -314,7 +316,10 @@ void apiEstado() {
   j.reserve(1400);
   j += "{\"epoch\":"; j += ahora;
   j += ",\"uptime\":"; j += millis() / 1000;
+  String ssid = modoAP ? String(AP_NOMBRE) : WiFi.SSID();
+  ssid.replace("\\", ""); ssid.replace("\"", "");
   j += ",\"wifi\":{\"modo\":\""; j += modoAP ? "ap" : "casa";
+  j += "\",\"red\":\""; j += ssid;
   j += "\",\"ip\":\""; j += modoAP ? WiFi.softAPIP().toString() : WiFi.localIP().toString();
   j += "\",\"rssi\":"; j += modoAP ? 0 : WiFi.RSSI(); j += "}";
   j += ",\"s3\":{\"vivo\":"; j += vivo ? "true" : "false";
@@ -487,27 +492,65 @@ void apiBorrarDatos() {
 }
 
 // ------------------------------------------------------------------ WiFi
+// Conoce hasta tres redes (secrets.h) y se une a la que tenga mas senal. Si no hay ninguna,
+// crea su propia red. Cada minuto, si nadie esta conectado a esa red propia, vuelve a buscar.
+void anunciarMdns() {
+  MDNS.end();
+  if (MDNS.begin(NOMBRE_MDNS)) MDNS.addService("http", "tcp", 80);
+}
+
+void alConectar() {
+  modoAP = false;
+  Serial.printf(">>> WiFi \"%s\" OK. Abre en el celular: http://%s.local  (o http://%s)\n",
+                WiFi.SSID().c_str(), NOMBRE_MDNS, WiFi.localIP().toString().c_str());
+  configTime(0, 0, "pool.ntp.org", "time.google.com");
+  anunciarMdns();
+}
+
+void abrirRedPropia() {
+  modoAP = true;
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(AP_NOMBRE, AP_CLAVE);
+  Serial.printf(">>> No encontre ninguna red conocida. Conecta el celular a \"%s\" (clave %s) y abre http://%s\n",
+                AP_NOMBRE, AP_CLAVE, WiFi.softAPIP().toString().c_str());
+  anunciarMdns();
+}
+
 void iniciarWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.setHostname(NOMBRE_MDNS);
-  WiFi.begin(WIFI_NOMBRE, WIFI_CLAVE);
-  Serial.printf("Conectando a \"%s\"", WIFI_NOMBRE);
-  unsigned long inicio = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - inicio < 15000) { delay(500); Serial.print("."); }
-  Serial.println();
-  if (WiFi.status() == WL_CONNECTED) {
-    modoAP = false;
-    Serial.printf(">>> WiFi OK. Abre en el celular: http://%s.local  (o http://%s)\n", NOMBRE_MDNS, WiFi.localIP().toString().c_str());
-    configTime(0, 0, "pool.ntp.org", "time.google.com");
-  } else {
-    modoAP = true;
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_AP);
-    WiFi.softAP(AP_NOMBRE, AP_CLAVE);
-    Serial.printf(">>> Sin WiFi de la casa. Conecta el celular a la red \"%s\" (clave %s) y abre http://%s\n",
-                  AP_NOMBRE, AP_CLAVE, WiFi.softAPIP().toString().c_str());
+  redes.addAP(WIFI_NOMBRE, WIFI_CLAVE);
+#ifdef WIFI2_NOMBRE
+  redes.addAP(WIFI2_NOMBRE, WIFI2_CLAVE);
+#endif
+#ifdef WIFI3_NOMBRE
+  redes.addAP(WIFI3_NOMBRE, WIFI3_CLAVE);
+#endif
+  Serial.println("Buscando redes conocidas...");
+  if (redes.run(20000) == WL_CONNECTED) alConectar();
+  else abrirRedPropia();
+}
+
+void vigilarWiFi() {
+  static unsigned long ultimo = 0;
+  if (modoAP) {
+    if (millis() - ultimo < 60000 || WiFi.softAPgetStationNum() > 0) return;
+    ultimo = millis();
+    WiFi.mode(WIFI_AP_STA);                      // la red propia sigue mientras busca
+    if (redes.run(10000) == WL_CONNECTED) {
+      WiFi.softAPdisconnect(true);
+      WiFi.mode(WIFI_STA);
+      alConectar();
+    } else {
+      WiFi.mode(WIFI_AP);
+    }
+  } else if (WiFi.status() != WL_CONNECTED) {
+    if (millis() - ultimo < 15000) return;       // se cayo la red: prueba con las otras conocidas
+    ultimo = millis();
+    Serial.println("Se perdio el WiFi, buscando redes conocidas...");
+    if (redes.run(10000) == WL_CONNECTED) alConectar();
   }
-  if (MDNS.begin(NOMBRE_MDNS)) MDNS.addService("http", "tcp", 80);
 }
 
 // ------------------------------------------------------------------ programa
@@ -548,6 +591,7 @@ void setup() {
 void loop() {
   leerCable();
   web.handleClient();
+  vigilarWiFi();
 #if USAR_AWS
   awsAtender();
 #endif
