@@ -67,6 +67,13 @@
   th { color: var(--suave); font-weight: 600; }
   .tabla { overflow-x: auto; }
   .msg { font-size: 13px; min-height: 18px; margin: 0; }
+  ul.redes { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  ul.redes li { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--fondo); border: 1px solid var(--linea); border-radius: 10px; padding: 8px 10px; overflow-wrap: anywhere; }
+  ul.redes small { color: var(--suave); white-space: nowrap; }
+  button.chico { padding: 6px 10px; font-size: 13px; }
+  .cercanas { display: grid; gap: 6px; }
+  .cercanas button { text-align: left; background: var(--fondo); border: 1px solid var(--linea); display: flex; justify-content: space-between; gap: 8px; overflow-wrap: anywhere; }
+  .cercanas small { color: var(--suave); white-space: nowrap; font-weight: 400; }
   .msg.ok { color: var(--verde); } .msg.mal { color: var(--rojo); }
   .leyenda { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--suave); }
   .leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
@@ -251,6 +258,22 @@
   <!-- ============================ AJUSTES ============================ -->
   <section data-vista="ajustes">
     <div class="panel">
+      <h2>Redes WiFi</h2>
+      <p class="nota">El devkit se une a la red guardada con más señal. Si no ve ninguna, crea la red CENTINELA-RF (clave centinela2026) y sigue buscando.</p>
+      <ul class="redes" id="listaRedes"><li>Cargando…</li></ul>
+      <button id="btnBuscarRedes" type="button">Buscar redes cercanas</button>
+      <div class="cercanas" id="redesCerca"></div>
+      <label for="redNombre">Nombre de la red
+        <input id="redNombre" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="32">
+      </label>
+      <label for="redClave">Clave (vacía si la red es abierta)
+        <input id="redClave" type="password" autocomplete="off" maxlength="63">
+      </label>
+      <button id="btnGuardarRed" type="button" class="primario">Guardar red</button>
+      <p id="msgRedes" class="msg"></p>
+      <p class="nota">Para usar los datos del iPhone: Ajustes → Compartir Internet, con “Maximizar compatibilidad” activado (el ESP32 solo ve 2,4 GHz). Guarda aquí el nombre del iPhone y esa clave; luego sal de CENTINELA-RF, activa Compartir Internet y deja esa pantalla abierta. En menos de un minuto el devkit se pasa solo.</p>
+    </div>
+    <div class="panel">
       <h2>Alerta</h2>
       <label for="ajAlerta">Encender la alerta tras
         <select id="ajAlerta" data-clave="alerta">
@@ -336,6 +359,7 @@ document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click
   b.setAttribute("aria-current", "page");
   document.querySelectorAll("section[data-vista]").forEach((s) => s.classList.toggle("activa", s.dataset.vista === b.dataset.ir));
   if (b.dataset.ir === "datos") cargarHistorial();
+  if (b.dataset.ir === "ajustes") cargarRedes();
   window.scrollTo(0, 0);
 }));
 
@@ -382,6 +406,7 @@ function pintarEstado() {
   $("dModelo").textContent = textoModelo;
   const horasGuardadas = (estado.almacen.registros * 2 / 3600).toFixed(1);
   $("dMemoria").textContent = horasGuardadas + " de " + estado.almacen.horas_max + " h";
+  mostrarPruebaRed();
   $("dRed").textContent = estado.wifi.modo === "ap" ? "propia " + estado.wifi.ip : (estado.wifi.red || "WiFi") + " " + estado.wifi.ip + " (" + estado.wifi.rssi + " dBm)";
   $("dAws").textContent = estado.aws ? (estado.aws.conectado ? "conectado" : "apagado") : "no usado";
   $("eventos").innerHTML = estado.eventos.length
@@ -570,6 +595,70 @@ document.querySelectorAll("select[data-clave]").forEach((sel) => sel.addEventLis
 $("btnProbarVoz").addEventListener("click", async () => {
   try { await post("/api/ajuste?clave=probar_voz&valor=1"); mensaje("msgAjustes", "Debería sonar el parlante.", true); }
   catch (e) { mensaje("msgAjustes", e.message, false); }
+});
+
+// ---------------------------------------------------------------- redes WiFi
+const formulario = (datos) => ({ method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(datos).toString() });
+function escapar(t) { return String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+
+async function cargarRedes() {
+  try {
+    const r = await api("/api/redes");
+    $("listaRedes").innerHTML = r.conocidas.length ? r.conocidas.map((x) => "<li><span>" + escapar(x.nombre) + "</span>" +
+      (x.fija ? "<small>en secrets.h</small>" : '<button type="button" class="peligro chico" data-quitar="' + escapar(x.nombre) + '">Quitar</button>') + "</li>").join("")
+      : "<li>Ninguna guardada.</li>";
+  } catch (e) { mensaje("msgRedes", e.message, false); }
+}
+
+function mostrarPruebaRed() {
+  const w = estado && estado.wifi;
+  if (!w || !w.prueba) return;
+  const red = "«" + w.prueba_red + "»";
+  if (w.prueba === "probando") mensaje("msgRedes", "Probando " + red + "…");
+  else if (w.prueba === "fallo") mensaje("msgRedes", "No se pudo conectar a " + red + ". Revisa la clave y que sea de 2,4 GHz.", false);
+  else if (w.prueba === "ok" && w.modo !== "ap") mensaje("msgRedes", "Conectado a " + red + " con la IP " + w.ip + ". Pasa el celular a esa red y abre http://" + w.ip + " (o detector.local).", true);
+}
+
+$("listaRedes").addEventListener("click", async (ev) => {
+  const b = ev.target.closest("button[data-quitar]");
+  if (!b) return;
+  try { await api("/api/redes/borrar", formulario({ nombre: b.dataset.quitar })); mensaje("msgRedes", "Quitada.", true); cargarRedes(); }
+  catch (e) { mensaje("msgRedes", e.message, false); }
+});
+
+$("btnBuscarRedes").addEventListener("click", async () => {
+  $("btnBuscarRedes").disabled = true;
+  mensaje("msgRedes", "Buscando (unos 4 s)…");
+  try {
+    const r = await api("/api/redes/cerca");
+    const redes = r.redes.sort((a, b) => b.rssi - a.rssi);
+    $("redesCerca").innerHTML = redes.map((x) => '<button type="button" data-red="' + escapar(x.nombre) + '"><span>' + escapar(x.nombre) +
+      "</span><small>" + x.rssi + " dBm" + (x.abierta ? " · abierta" : "") + "</small></button>").join("");
+    mensaje("msgRedes", redes.length ? "Toca una para escogerla." : "No se ve ninguna red de 2,4 GHz.", redes.length > 0);
+  } catch (e) { mensaje("msgRedes", e.message, false); }
+  $("btnBuscarRedes").disabled = false;
+});
+
+$("redesCerca").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-red]");
+  if (!b) return;
+  $("redNombre").value = b.dataset.red;
+  $("redClave").focus();
+});
+
+$("btnGuardarRed").addEventListener("click", async () => {
+  const nombre = $("redNombre").value.trim(), clave = $("redClave").value;
+  if (!nombre) { mensaje("msgRedes", "Escribe o escoge el nombre de la red.", false); return; }
+  if (clave && clave.length < 8) { mensaje("msgRedes", "La clave de un WiFi tiene mínimo 8 caracteres.", false); return; }
+  $("btnGuardarRed").disabled = true;
+  try {
+    const r = await api("/api/redes/agregar", formulario({ nombre, clave }));
+    $("redClave").value = "";
+    $("redesCerca").innerHTML = "";
+    mensaje("msgRedes", r.probando ? "Guardada. Probando la conexión…" : "Guardada. La usará cuando no encuentre la red actual.", true);
+    cargarRedes();
+  } catch (e) { mensaje("msgRedes", e.message, false); }
+  $("btnGuardarRed").disabled = false;
 });
 
 window.addEventListener("resize", () => { dibujarVivo(); dibujarLineaTiempo(); });

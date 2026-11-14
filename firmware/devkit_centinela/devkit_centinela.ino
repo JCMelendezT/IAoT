@@ -25,7 +25,8 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
-#include <WiFiMulti.h>
+#include <Preferences.h>
+#include <vector>
 #include <time.h>
 #include <sys/time.h>
 #include "secrets.h"
@@ -51,8 +52,17 @@ const int PIN_TX_S3 = 17;
 const char* NOMBRE_MDNS = "detector";          // http://detector.local
 
 WebServer web(80);
-bool modoAP = false;
-WiFiMulti redes;                               // casa, celular y las que haya en secrets.h
+bool modoAP = false;                           // sin WiFi: solo la red propia CENTINELA-RF
+
+struct RedWiFi { String nombre, clave; bool fija; };   // fija = viene de secrets.h
+const int MAX_REDES_APP = 5;
+std::vector<RedWiFi> redesConocidas;
+bool apAbierta = false;                        // la red propia esta encendida
+unsigned long apDesde = 0, caidoDesde = 0;
+bool pruebaPendiente = false;
+String pruebaNombre, resultadoPrueba;          // "", "probando", "ok" o "fallo"
+
+String sinComillas(String t) { t.replace("\\", ""); t.replace("\"", ""); return t; }
 
 // ------------------------------------------------------------------ estado en vivo
 struct EstadoS3 {
@@ -316,10 +326,10 @@ void apiEstado() {
   j.reserve(1400);
   j += "{\"epoch\":"; j += ahora;
   j += ",\"uptime\":"; j += millis() / 1000;
-  String ssid = modoAP ? String(AP_NOMBRE) : WiFi.SSID();
-  ssid.replace("\\", ""); ssid.replace("\"", "");
-  j += ",\"wifi\":{\"modo\":\""; j += modoAP ? "ap" : "casa";
-  j += "\",\"red\":\""; j += ssid;
+  j += ",\"wifi\":{\"modo\":\""; j += modoAP ? "ap" : "red";
+  j += "\",\"red\":\""; j += sinComillas(modoAP ? String(AP_NOMBRE) : WiFi.SSID());
+  j += "\",\"prueba\":\""; j += resultadoPrueba;
+  j += "\",\"prueba_red\":\""; j += sinComillas(pruebaNombre);
   j += "\",\"ip\":\""; j += modoAP ? WiFi.softAPIP().toString() : WiFi.localIP().toString();
   j += "\",\"rssi\":"; j += modoAP ? 0 : WiFi.RSSI(); j += "}";
   j += ",\"s3\":{\"vivo\":"; j += vivo ? "true" : "false";
@@ -492,8 +502,9 @@ void apiBorrarDatos() {
 }
 
 // ------------------------------------------------------------------ WiFi
-// Conoce hasta tres redes (secrets.h) y se une a la que tenga mas senal. Si no hay ninguna,
-// crea su propia red. Cada minuto, si nadie esta conectado a esa red propia, vuelve a buscar.
+// Redes conocidas: las de secrets.h y hasta 5 que se agregan desde la app (quedan guardadas en
+// la memoria del devkit). Se une a la conocida con mas senal. Si no ve ninguna, crea su red
+// propia y vuelve a buscar cada 30 s mientras nadie este conectado a ella.
 void anunciarMdns() {
   MDNS.end();
   if (MDNS.begin(NOMBRE_MDNS)) MDNS.addService("http", "tcp", 80);
@@ -501,14 +512,18 @@ void anunciarMdns() {
 
 void alConectar() {
   modoAP = false;
+  caidoDesde = 0;
+  if (apAbierta) apDesde = millis();
   Serial.printf(">>> WiFi \"%s\" OK. Abre en el celular: http://%s.local  (o http://%s)\n",
                 WiFi.SSID().c_str(), NOMBRE_MDNS, WiFi.localIP().toString().c_str());
+  agregarEvento(("WiFi " + WiFi.SSID() + " " + WiFi.localIP().toString()).c_str());
   configTime(0, 0, "pool.ntp.org", "time.google.com");
   anunciarMdns();
 }
 
 void abrirRedPropia() {
   modoAP = true;
+  apAbierta = true;
   WiFi.disconnect(true);
   WiFi.mode(WIFI_AP);
   WiFi.softAP(AP_NOMBRE, AP_CLAVE);
@@ -517,40 +532,181 @@ void abrirRedPropia() {
   anunciarMdns();
 }
 
+void agregarConocida(const String& nombre, const String& clave, bool fija) {
+  if (!nombre.length()) return;
+  for (auto& r : redesConocidas)
+    if (r.nombre == nombre) { if (!r.fija) r.clave = clave; return; }
+  redesConocidas.push_back({nombre, clave, fija});
+}
+
+int redesDeLaApp() {
+  int n = 0;
+  for (auto& r : redesConocidas) if (!r.fija) n++;
+  return n;
+}
+
+void cargarRedes() {
+  redesConocidas.clear();
+  agregarConocida(WIFI_NOMBRE, WIFI_CLAVE, true);
+#ifdef WIFI2_NOMBRE
+  agregarConocida(WIFI2_NOMBRE, WIFI2_CLAVE, true);
+#endif
+#ifdef WIFI3_NOMBRE
+  agregarConocida(WIFI3_NOMBRE, WIFI3_CLAVE, true);
+#endif
+  Preferences p;
+  p.begin("redes", true);
+  int n = p.getUChar("n", 0);
+  for (int i = 0; i < n && i < MAX_REDES_APP; i++)
+    agregarConocida(p.getString(("s" + String(i)).c_str(), ""), p.getString(("c" + String(i)).c_str(), ""), false);
+  p.end();
+}
+
+void guardarRedes() {
+  Preferences p;
+  p.begin("redes", false);
+  p.clear();
+  int i = 0;
+  for (auto& r : redesConocidas) {
+    if (r.fija || i >= MAX_REDES_APP) continue;
+    p.putString(("s" + String(i)).c_str(), r.nombre);
+    p.putString(("c" + String(i)).c_str(), r.clave);
+    i++;
+  }
+  p.putUChar("n", i);
+  p.end();
+}
+
+// Busca las redes cercanas y se une a la conocida con mas senal. Con soloEsta, prueba solo
+// esa (aunque no salga en la busqueda, por si esta oculta).
+bool conectarConocida(const String& soloEsta, uint32_t espera) {
+  int n = WiFi.scanNetworks();
+  const RedWiFi* elegida = nullptr;
+  int mejor = -1000;
+  for (int i = 0; i < n; i++)
+    for (auto& r : redesConocidas)
+      if (WiFi.SSID(i) == r.nombre && (!soloEsta.length() || r.nombre == soloEsta) && WiFi.RSSI(i) > mejor) {
+        elegida = &r;
+        mejor = WiFi.RSSI(i);
+      }
+  WiFi.scanDelete();
+  if (!elegida && soloEsta.length())
+    for (auto& r : redesConocidas) if (r.nombre == soloEsta) elegida = &r;
+  if (!elegida) return false;
+  Serial.printf("Probando \"%s\"", elegida->nombre.c_str());
+  WiFi.begin(elegida->nombre.c_str(), elegida->clave.c_str());
+  unsigned long inicio = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - inicio < espera) { delay(250); leerCable(); Serial.print("."); }
+  Serial.println();
+  if (WiFi.status() == WL_CONNECTED) return true;
+  WiFi.disconnect();
+  return false;
+}
+
 void iniciarWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.setHostname(NOMBRE_MDNS);
-  redes.addAP(WIFI_NOMBRE, WIFI_CLAVE);
-#ifdef WIFI2_NOMBRE
-  redes.addAP(WIFI2_NOMBRE, WIFI2_CLAVE);
-#endif
-#ifdef WIFI3_NOMBRE
-  redes.addAP(WIFI3_NOMBRE, WIFI3_CLAVE);
-#endif
-  Serial.println("Buscando redes conocidas...");
-  if (redes.run(20000) == WL_CONNECTED) alConectar();
+  cargarRedes();
+  Serial.printf("Buscando redes conocidas (%d)...\n", (int)redesConocidas.size());
+  if (conectarConocida("", 20000)) alConectar();
   else abrirRedPropia();
 }
 
 void vigilarWiFi() {
   static unsigned long ultimo = 0;
-  if (modoAP) {
-    if (millis() - ultimo < 60000 || WiFi.softAPgetStationNum() > 0) return;
-    ultimo = millis();
-    WiFi.mode(WIFI_AP_STA);                      // la red propia sigue mientras busca
-    if (redes.run(10000) == WL_CONNECTED) {
-      WiFi.softAPdisconnect(true);
-      WiFi.mode(WIFI_STA);
-      alConectar();
-    } else {
-      WiFi.mode(WIFI_AP);
-    }
-  } else if (WiFi.status() != WL_CONNECTED) {
-    if (millis() - ultimo < 15000) return;       // se cayo la red: prueba con las otras conocidas
-    ultimo = millis();
-    Serial.println("Se perdio el WiFi, buscando redes conocidas...");
-    if (redes.run(10000) == WL_CONNECTED) alConectar();
+  if (pruebaPendiente) {                          // la app acaba de agregar una red
+    pruebaPendiente = false;
+    if (modoAP) WiFi.mode(WIFI_AP_STA);           // la red propia sigue para no perder la app
+    if (conectarConocida(pruebaNombre, 15000)) { resultadoPrueba = "ok"; alConectar(); }
+    else { resultadoPrueba = "fallo"; if (modoAP) WiFi.mode(WIFI_AP); }
+    return;
   }
+  if (modoAP) {
+    if (millis() - ultimo < 30000 || WiFi.softAPgetStationNum() > 0) return;
+    ultimo = millis();
+    WiFi.mode(WIFI_AP_STA);
+    if (conectarConocida("", 10000)) alConectar();
+    else WiFi.mode(WIFI_AP);
+    return;
+  }
+  // Ya hay WiFi: la red propia se apaga cuando el celular se va de ella, o a los 3 minutos.
+  if (apAbierta && millis() - apDesde > 20000 && (WiFi.softAPgetStationNum() == 0 || millis() - apDesde > 180000)) {
+    WiFi.softAPdisconnect(true);
+    WiFi.mode(WIFI_STA);
+    apAbierta = false;
+    Serial.println("Red propia apagada: ya hay WiFi.");
+  }
+  if (WiFi.status() == WL_CONNECTED) { caidoDesde = 0; return; }
+  if (!caidoDesde) caidoDesde = millis();
+  if (millis() - ultimo < 15000) return;
+  ultimo = millis();
+  Serial.println("Se perdio el WiFi, buscando redes conocidas...");
+  if (conectarConocida("", 10000)) alConectar();
+  else if (millis() - caidoDesde > 60000) abrirRedPropia();   // un minuto sin red: la app sigue por CENTINELA-RF
+}
+
+void apiRedes() {
+  String j = "{\"max\":"; j += MAX_REDES_APP; j += ",\"conocidas\":[";
+  bool primera = true;
+  for (auto& r : redesConocidas) {
+    if (!primera) j += ",";
+    primera = false;
+    j += "{\"nombre\":\""; j += sinComillas(r.nombre); j += "\",\"fija\":"; j += r.fija ? "true" : "false"; j += "}";
+  }
+  j += "]}";
+  responderJson(200, j);
+}
+
+void apiRedesCerca() {
+  if (modoAP) WiFi.mode(WIFI_AP_STA);
+  int n = WiFi.scanNetworks();
+  String j = "{\"redes\":[";
+  int puestas = 0;
+  for (int i = 0; i < n; i++) {
+    String nombre = sinComillas(WiFi.SSID(i));
+    if (!nombre.length()) continue;
+    bool repetida = false;                       // un mismo WiFi puede salir varias veces
+    for (int k = 0; k < i; k++) if (WiFi.SSID(k) == WiFi.SSID(i)) repetida = true;
+    if (repetida) continue;
+    if (puestas++) j += ",";
+    j += "{\"nombre\":\""; j += nombre;
+    j += "\",\"rssi\":"; j += WiFi.RSSI(i);
+    j += ",\"abierta\":"; j += WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "true" : "false"; j += "}";
+  }
+  WiFi.scanDelete();
+  if (modoAP) WiFi.mode(WIFI_AP);
+  j += "]}";
+  responderJson(200, j);
+}
+
+void apiRedesAgregar() {
+  String nombre = web.arg("nombre"), clave = web.arg("clave");
+  nombre.trim();
+  if (!nombre.length() || nombre.length() > 32) { responderJson(400, "{\"detalle\":\"el nombre debe tener de 1 a 32 caracteres\"}"); return; }
+  if (clave.length() && (clave.length() < 8 || clave.length() > 63)) { responderJson(400, "{\"detalle\":\"la clave debe tener de 8 a 63 caracteres\"}"); return; }
+  bool nueva = true;
+  for (auto& r : redesConocidas) if (r.nombre == nombre) nueva = false;
+  if (nueva && redesDeLaApp() >= MAX_REDES_APP) { responderJson(400, "{\"detalle\":\"ya hay 5 redes guardadas: quita una\"}"); return; }
+  agregarConocida(nombre, clave, false);
+  guardarRedes();
+  agregarEvento(("WiFi guardada: " + nombre).c_str());
+  pruebaNombre = nombre;
+  bool probar = modoAP;                           // si ya hay WiFi no se cambia, para no cortar la app
+  if (probar) { resultadoPrueba = "probando"; pruebaPendiente = true; }
+  else resultadoPrueba = "";
+  responderJson(200, String("{\"ok\":true,\"probando\":") + (probar ? "true" : "false") + "}");
+}
+
+void apiRedesBorrar() {
+  String nombre = web.arg("nombre");
+  for (size_t i = 0; i < redesConocidas.size(); i++)
+    if (redesConocidas[i].nombre == nombre && !redesConocidas[i].fija) {
+      redesConocidas.erase(redesConocidas.begin() + i);
+      guardarRedes();
+      responderJson(200, "{\"ok\":true}");
+      return;
+    }
+  responderJson(404, "{\"detalle\":\"esa red no esta guardada desde la app\"}");
 }
 
 // ------------------------------------------------------------------ programa
@@ -579,6 +735,10 @@ void setup() {
   web.on("/api/modelo_fabrica", HTTP_POST, apiModeloFabrica);
   web.on("/api/ajuste", HTTP_POST, apiAjuste);
   web.on("/api/borrar_datos", HTTP_POST, apiBorrarDatos);
+  web.on("/api/redes", HTTP_GET, apiRedes);
+  web.on("/api/redes/cerca", HTTP_GET, apiRedesCerca);
+  web.on("/api/redes/agregar", HTTP_POST, apiRedesAgregar);
+  web.on("/api/redes/borrar", HTTP_POST, apiRedesBorrar);
   web.onNotFound([]() { web.send(404, "text/plain", "no existe"); });
   web.begin();
 
