@@ -41,6 +41,7 @@ detector/      captura de datos, entrenamiento, modelo exportado y resultados
 firmware/      sketches de Arduino: nodo_detector (S3), devkit_centinela (devkit),
                nodo_captura y pruebas/ de cada pieza
 app/           app web del celular y el reentrenamiento en JavaScript
+mcp/           servidor MCP para que Claude lea el historial de eventos del detector
 docs/          hardware y conexiones, bitácora de decisiones, diagramas, enunciados
 practica-1/    servidor web con FastAPI y PostgreSQL, local y en Azure
 practica-2/    broker MQTT, InfluxDB y Grafana en Azure
