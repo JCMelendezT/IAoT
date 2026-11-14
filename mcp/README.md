@@ -13,10 +13,13 @@ Python 3.10 o más. El PC y el devkit tienen que estar en la misma red.
 
 ```
 pip install -r mcp/requirements.txt
-claude mcp add detector -e DETECTOR_URL=http://172.20.10.2 -- python C:\Users\juanc\Desktop\IAoT\mcp\servidor.py
+claude mcp add --scope user detector -- python C:\Users\juanc\Desktop\IAoT\mcp\servidor.py http://172.20.10.9
+claude mcp list
 ```
 
-`DETECTOR_URL` es la IP que muestra el Monitor Serie o la app (si no se pone, usa `http://detector.local`). Después se le puede preguntar a Claude cosas como "¿hubo alertas anoche?" o "¿cuáles de las alertas de hoy no tienen etiqueta?".
+`--scope user` lo deja disponible desde cualquier carpeta. La dirección va como último argumento; no uso `--env` porque se traga el nombre del servidor y el comando falla.
+
+La dirección es la IP que muestra la app en la tarjeta de red o el Monitor Serie. Si no se pone ninguna, usa la variable `DETECTOR_URL` o, si tampoco está, `http://detector.local`. Después se le puede preguntar a Claude cosas como "¿hubo alertas anoche?" o "¿cuáles de las alertas de hoy no tienen etiqueta?".
 
 ## Probar sin la placa
 
@@ -25,7 +28,7 @@ cd mcp
 python simulador_devkit.py        # devkit falso en http://127.0.0.1:8099
 ```
 
-y en otra terminal, con `DETECTOR_URL=http://127.0.0.1:8099`. El simulador tiene una falsa alarma ya etiquetada como fondo, una alerta de dron y un hueco sin datos.
+y en otra terminal, con la dirección `http://127.0.0.1:8099`. El simulador tiene una falsa alarma ya etiquetada como fondo, una alerta de dron y un hueco sin datos.
 
 ## Límites
 

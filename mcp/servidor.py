@@ -1,15 +1,19 @@
 """Servidor MCP del detector: solo lectura del historial de eventos.
 
 Habla con la API del devkit_centinela y no cambia nada en el detector.
-La dirección se toma de DETECTOR_URL (por defecto http://detector.local).
+La dirección del devkit se toma, en este orden, del primer argumento
+(python servidor.py http://172.20.10.9), de la variable DETECTOR_URL, o es http://detector.local.
 """
 import os
+import sys
 from datetime import datetime, timedelta, timezone
 
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-URL = os.environ.get("DETECTOR_URL", "http://detector.local").rstrip("/")
+URL = (sys.argv[1] if len(sys.argv) > 1 else os.environ.get("DETECTOR_URL", "http://detector.local")).rstrip("/")
+if not URL.startswith("http"):
+    URL = "http://" + URL
 ZONA = timezone(timedelta(hours=-5))          # hora de Colombia
 ETIQUETAS = {0: "sin etiqueta", 1: "fondo", 2: "bluetooth", 3: "dron"}
 
