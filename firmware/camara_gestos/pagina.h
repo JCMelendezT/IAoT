@@ -34,7 +34,14 @@ code{background:var(--f);padding:1px 5px;border-radius:4px}
 <div class="e"><span>Puno</span><div class="b"><i id="p2"></i></div><span id="n2">0</span></div>
 <p class="m" id="est"></p></section>
 
-<section><h2>1. Sacar fotos para entrenar</h2>
+<section><h2>1. Sesion guiada (la forma facil)</h2>
+<p class="s">Pulsas un solo boton. La pagina te dice en voz alta que gesto hacer, cuenta con pitidos y baja sola un .zip por tanda. Sube el volumen del PC y ponte frente a la camara.</p>
+<div class="fila"><label>Rondas <input id="gr" type="number" min="3" max="8" value="3" style="width:70px"></label>
+<label>Fotos por tanda <input id="gn" type="number" min="20" max="300" value="80" style="width:80px"></label>
+<button id="gg">Empezar sesion guiada</button><button class="g" id="gx" disabled>Detener</button></div>
+<p class="m">Cada ronda hace Mano abierta, Puno y Nada (unos 20 s cada uno) y entre rondas te da 15 s para cambiar de lugar, luz o fondo. Con 3 rondas son unos 4 minutos y 9 archivos. Chrome puede preguntar si permites varias descargas: di que si. Despues mueve los .zip a <code>detector/gestos/fotos/</code>.</p></section>
+
+<section><h2>1b. Sacar fotos a mano</h2>
 <p class="s">Cada tanda se baja como un .zip. Haz varias tandas por gesto, cambiando fondo, luz y distancia (la sesion sube sola).</p>
 <div class="fila"><select id="cl"><option value="abierta">Mano abierta</option><option value="puno">Puno</option><option value="nada">Nada (sin gesto)</option></select>
 <label>Sesion <input id="se" type="number" min="1" max="99" value="1" style="width:70px"></label>
@@ -60,9 +67,9 @@ code{background:var(--f);padding:1px 5px;border-radius:4px}
 </main>
 <script>
 const $=i=>document.getElementById(i),N=['Nada','Mano abierta','Puno'];let capturando=false,ult=-1;
-const f=(u,o)=>fetch(u,o).then(async r=>{const t=await r.text();if(!r.ok)throw new Error(t||r.status);return t});
+const f=(u,o,ms)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms||8000);return fetch(u,Object.assign({},o,{signal:c.signal})).then(async r=>{const x=await r.text();if(!r.ok)throw new Error(x||r.status);return x}).finally(()=>clearTimeout(t))};
 function msg(id,t,ok){const e=$(id);e.textContent=t;e.className=ok?'ok':'mal'}
-async function estado(){try{const e=JSON.parse(await f('/api/estado'));
+async function estado(){if(capturando)return;try{const e=JSON.parse(await f('/api/estado'));
 $('seguro').hidden=e.modo!=='seguro';
 for(let i=0;i<3;i++){$('p'+i).style.width=(e.prob[i]*100)+'%';$('n'+i).textContent=Math.round(e.prob[i]*100)+'%'}
 $('gesto').textContent=!e.camara?'La camara no inicio':!e.modelo?'Sin modelo (sube uno)':(e.gesto?'Gesto: '+N[e.gesto]:'Nada');
@@ -71,10 +78,10 @@ $('acc').textContent=e.accion!=='ninguna'?'Ultima accion hace '+e.haceSeg+' s: '
 $('est').textContent='IP '+e.ip+' · '+e.wifi+(e.rssi?' ('+e.rssi+' dBm)':'')+' · devkit '+e.devkit+(e.devkitIp?' ('+e.devkitIp+')':'')+(e.modelo?' · modelo '+e.modeloSuma:' · '+(e.modeloError||''))+' · memoria libre '+Math.round(e.memoria/1024)+' KB, PSRAM '+Math.round(e.psram/1024)+' KB';
 $('redes').textContent='WiFi conocidos: '+(e.redes.length?e.redes.join(', '):'ninguno')+(e.modo==='ap'?'  (ahora estoy en mi red propia)':'');
 if(!$('dh').value)$('dh').value=e.devkit}catch(x){$('est').textContent='Sin conexion con la camara...'}}
-async function foto(){const r=await fetch('/api/entrada.pgm',{cache:'no-store'});if(!r.ok)throw 0;
+async function foto(){const c=new AbortController(),t=setTimeout(()=>c.abort(),4000),r=await fetch('/api/entrada.pgm',{cache:'no-store',signal:c.signal});clearTimeout(t);if(!r.ok)throw 0;
 const b=new Uint8Array(await r.arrayBuffer()),seq=+r.headers.get('X-Seq'),d=b.subarray(b.length-4800);return{seq,d}}
 function dibujar(d){const c=$('v').getContext('2d'),im=c.createImageData(80,60);for(let i=0;i<4800;i++){im.data[4*i]=im.data[4*i+1]=im.data[4*i+2]=d[i];im.data[4*i+3]=255}c.putImageData(im,0,0)}
-async function vista(){if(!capturando){try{const x=await foto();dibujar(x.d)}catch(e){}}setTimeout(vista,300)}
+async function vista(){if(!capturando&&!document.hidden){try{const x=await foto();dibujar(x.d)}catch(e){}}setTimeout(vista,500)}
 // ---- zip sin compresion ----
 const T=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
 const crc=d=>{let c=~0;for(let i=0;i<d.length;i++)c=T[(c^d[i])&255]^(c>>>8);return ~c>>>0};
@@ -88,15 +95,39 @@ let cs=0;for(const c of cen)cs+=c.byteLength||c.length;const z=new DataView(new 
 z.setUint32(0,0x06054b50,true);z.setUint16(8,arch.length,true);z.setUint16(10,arch.length,true);z.setUint32(12,cs,true);z.setUint32(16,off,true);
 return new Blob([...p,...cen,z.buffer],{type:'application/zip'})}
 $('se').value=localStorage.getItem('sesion')||1;
-$('go').onclick=async()=>{if(capturando)return;capturando=true;$('go').disabled=true;
-const cl=$('cl').value,se=+$('se').value,n=+$('nf').value,pre=cl+'_s'+String(se).padStart(2,'0'),arch=[];
-try{for(let s=3;s>0;s--){$('pt').textContent='Empieza en '+s+'...';await new Promise(r=>setTimeout(r,1000))}
-let last=-1;while(arch.length<n){const x=await foto();if(x.seq!==last){last=x.seq;dibujar(x.d);arch.push({n:pre+'_'+String(arch.length+1).padStart(4,'0')+'.pgm',d:new Uint8Array([...new TextEncoder().encode('P5\n80 60\n255\n'),...x.d])});
-$('pb').style.width=(100*arch.length/n)+'%';$('pt').textContent=arch.length+' / '+n}await new Promise(r=>setTimeout(r,60))}
-const a=document.createElement('a');a.href=URL.createObjectURL(zip(arch));a.download=pre+'.zip';a.click();
-$('se').value=se+1;localStorage.setItem('sesion',se+1);$('pt').textContent='Listo: se bajo '+pre+'.zip. Guardalo en detector/gestos/fotos/'}
+const esperar=ms=>new Promise(r=>setTimeout(r,ms));let cancelar=false;
+function pitar(f,ms){try{const a=pitar.a||(pitar.a=new(window.AudioContext||window.webkitAudioContext)()),o=a.createOscillator(),g=a.createGain();o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+ms/1000)}catch(e){}}
+function decir(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='es-ES';speechSynthesis.speak(u)}catch(e){}}
+async function tanda(cl,se,n,cuenta,etq){const pre=cl+'_s'+String(se).padStart(2,'0'),arch=[],cab=new TextEncoder().encode('P5\n80 60\n255\n');
+for(let s=cuenta;s>0;s--){$('pt').textContent=etq+' en '+s+'...';if(s<=3)pitar(600,120);await esperar(1000);if(cancelar)throw new Error('detenido')}
+await f('/api/rafaga_iniciar?n='+n,{method:'POST'});pitar(1000,300);
+for(let fallos=0;;){if(cancelar){f('/api/rafaga_cancelar',{method:'POST'}).catch(()=>{});throw new Error('detenido')}
+await esperar(500);
+try{const e=JSON.parse(await f('/api/estado'));fallos=0;$('pb').style.width=(100*e.rafHecho/n)+'%';$('pt').textContent=etq+': '+e.rafHecho+' / '+n;if(!e.raf)break}
+catch(x){if(++fallos>20)throw new Error('la camara no responde')}}
+pitar(1000,150);setTimeout(()=>pitar(1000,150),250);
+let b;for(let k=0;;k++){try{const c=new AbortController(),t=setTimeout(()=>c.abort(),30000),r=await fetch('/api/rafaga.bin',{cache:'no-store',signal:c.signal});clearTimeout(t);if(!r.ok)throw new Error(await r.text());b=new Uint8Array(await r.arrayBuffer());break}catch(x){if(k>=3)throw new Error('no pude bajar las fotos: '+x.message);await esperar(1000)}}
+for(let i=0;i+4800<=b.length;i++){const fr=b.subarray(i*4800,(i+1)*4800),d=new Uint8Array(cab.length+4800);d.set(cab);d.set(fr,cab.length);arch.push({n:pre+'_'+String(i+1).padStart(4,'0')+'.pgm',d});if(i===arch.length-1&&i%10===0)dibujar(fr)}
+$('pt').textContent=etq+': '+arch.length+' fotos listas';
+const a=document.createElement('a');a.href=URL.createObjectURL(zip(arch));a.download=pre+'.zip';a.click();return pre}
+function guardarSesion(v){$('se').value=v;try{localStorage.setItem('sesion',v)}catch(e){}}
+$('go').onclick=async()=>{if(capturando)return;capturando=true;cancelar=false;$('go').disabled=true;$('gg').disabled=true;
+const cl=$('cl').value,se=+$('se').value,n=+$('nf').value;
+try{const pre=await tanda(cl,se,n,3,'Empieza');guardarSesion(se+1);$('pt').textContent='Listo: se bajo '+pre+'.zip. Guardalo en detector/gestos/fotos/'}
 catch(e){$('pt').textContent='Se corto la tanda ('+(e&&e.message||'sin foto')+')'}
-capturando=false;$('go').disabled=false};
+capturando=false;$('go').disabled=false;$('gg').disabled=false};
+const GESTOS=[['abierta','Mano abierta','Mano abierta. Mantén la mano abierta frente a la cámara y muévela un poco.'],
+['puno','Puño','Puño. Mantén el puño cerrado frente a la cámara y muévelo un poco.'],
+['nada','Nada','Nada. Haz lo que haces normalmente, sin gestos. Muévete y mira a otro lado.']];
+$('gx').onclick=()=>{cancelar=true;speechSynthesis&&speechSynthesis.cancel()};
+$('gg').onclick=async()=>{if(capturando)return;capturando=true;cancelar=false;$('gg').disabled=true;$('go').disabled=true;$('gx').disabled=false;
+const R=+$('gr').value,n=+$('gn').value,base=+$('se').value;let hechos=0;
+try{for(let r=0;r<R;r++){
+if(r>0){decir('Ronda '+(r+1)+'. Cambia de lugar, de luz o de fondo.');for(let s=15;s>0;s--){$('pt').textContent='Ronda '+(r+1)+' de '+R+': cambia luz, fondo o distancia ('+s+' s)';await esperar(1000);if(cancelar)throw new Error('detenido')}}
+for(const[cl,nom,voz]of GESTOS){decir(voz);await tanda(cl,base+r,n,6,'Ronda '+(r+1)+'/'+R+' · '+nom+' empieza');hechos++}}
+guardarSesion(base+R);decir('Listo. Terminaste.');$('pt').textContent='Listo: se bajaron '+hechos+' archivos .zip. Muevelos a detector/gestos/fotos/'}
+catch(e){$('pt').textContent='Se detuvo ('+(e&&e.message||'sin foto')+'). Los .zip que ya se bajaron sirven.'}
+capturando=false;$('gg').disabled=false;$('go').disabled=false;$('gx').disabled=true};
 // ---- subidas ----
 function subir(url,file,barra,res,extra){return new Promise(ok=>{if(!file){msg(res,'Elige un archivo',false);return ok()}
 const x=new XMLHttpRequest(),fd=new FormData();fd.append('archivo',file,file.name);x.open('POST',url);
@@ -109,5 +140,5 @@ $('sw').onclick=()=>post('/api/wifi','nombre='+encodeURIComponent($('wn').value)
 $('sd').onclick=()=>post('/api/devkit','host='+encodeURIComponent($('dh').value)).then(t=>msg('rw',t,true)).catch(e=>msg('rw',e.message,false));
 $('pd').onclick=()=>post('/api/probar_devkit','').then(t=>msg('rw',t,true)).catch(e=>msg('rw',e.message,false));
 $('rs').onclick=()=>post('/api/reiniciar','').then(()=>msg('ro','Reiniciando... recarga la pagina en unos segundos',true)).catch(()=>{});
-estado();setInterval(estado,1000);vista();
+estado();setInterval(estado,2500);vista();
 </script></body></html>)HTML";

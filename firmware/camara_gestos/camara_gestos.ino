@@ -82,6 +82,10 @@ static int ventana[VENTANA];
 static bool libre = true;
 static int gestoFirme = 0;                // 0 nada, 1 abierta, 2 puno (lo que se ve ahora)
 static uint32_t msInferencia = 0;
+// Tanda de fotos para entrenar: la camara las guarda en memoria a su ritmo y la pagina las baja al final
+static uint8_t* rafaga = nullptr;
+static int rafMax = 0, rafHecho = 0;
+static bool rafActiva = false;
 static float fps = 0;
 static String ultimaAccion = "ninguna", resultadoAccion = "";
 static uint32_t tUltimaAccion = 0;
@@ -134,6 +138,7 @@ void guardarRed(const String& nombre, const String& clave) {
 
 void iniciarAP() {
   WiFi.mode(WIFI_AP);
+  WiFi.setSleep(false);
   WiFi.softAP(AP_NOMBRE, AP_CLAVE);
   enAP = true;
   Serial.printf("Sin WiFi conocido. Red propia: %s (clave %s) -> http://192.168.4.1\n", AP_NOMBRE, AP_CLAVE);
@@ -142,6 +147,7 @@ void iniciarAP() {
 // Se une al WiFi conocido con mas senal. Devuelve true si lo logra.
 bool conectar() {
   WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);                // sin ahorro de energia: la pagina responde mucho mas rapido
   WiFi.setHostname("camara");
   WiFi.setAutoReconnect(true);
   int n = WiFi.scanNetworks(false, false);
@@ -312,7 +318,10 @@ void ciclo() {
   }
   fotosMalas = 0;
   seq++;
-  if (red.listo) {
+  if (rafActiva) {
+    memcpy(rafaga + (size_t)rafHecho * sizeof(ultima), ultima, sizeof(ultima));
+    if (++rafHecho >= rafMax) rafActiva = false;
+  } else if (red.listo) {
     uint32_t a = micros();
     gestos::inferir(red, ultima, prob);
     msInferencia = (micros() - a) / 1000;
@@ -407,6 +416,7 @@ void apiEstado() {
   s += "\"rssi\":" + String(enAP ? 0 : WiFi.RSSI()) + ",";
   s += "\"fallos\":" + String(fallosArranque) + ",";
   s += "\"seq\":" + String(seq) + ",";
+  s += "\"raf\":" + String(rafActiva ? "true" : "false") + ",\"rafHecho\":" + String(rafHecho) + ",";
   s += "\"fps\":" + String(fps, 1) + ",";
   s += "\"ms\":" + String(msInferencia) + ",";
   s += "\"modelo\":" + String(red.listo ? "true" : "false") + ",";
@@ -436,6 +446,28 @@ void apiEntrada() {
   server.sendHeader("Cache-Control", "no-store");
   server.sendHeader("X-Seq", String(seq));
   server.send_P(200, "image/x-portable-graymap", (PGM_P)pgm, n + sizeof(ultima));
+}
+
+void apiRafagaIniciar() {
+  if (!camaraOk || modoSeguro) { server.send(503, "text/plain", "La camara no esta activa"); return; }
+  int n = server.arg("n").toInt();
+  if (n < 10 || n > 300) { server.send(400, "text/plain", "n debe estar entre 10 y 300"); return; }
+  rafActiva = false;
+  free(rafaga);
+  rafaga = (uint8_t*)GESTOS_ASIGNAR((size_t)n * sizeof(ultima));
+  if (!rafaga) { rafMax = rafHecho = 0; server.send(500, "text/plain", "Sin memoria para la tanda"); return; }
+  rafMax = n; rafHecho = 0; rafActiva = true;
+  server.send(200, "text/plain", "ok");
+}
+
+void apiRafagaDatos() {
+  if (!rafaga || rafActiva || rafHecho == 0) { server.send(409, "text/plain", "No hay una tanda lista"); return; }
+  server.send_P(200, "application/octet-stream", (PGM_P)rafaga, (size_t)rafHecho * sizeof(ultima));
+}
+
+void apiRafagaCancelar() {
+  rafActiva = false;
+  server.send(200, "text/plain", "ok");
 }
 
 void apiWiFi() {
@@ -473,6 +505,9 @@ void configurarServidor() {
   server.on("/", HTTP_GET, []() { server.send_P(200, "text/html; charset=utf-8", PAGINA); });
   server.on("/api/estado", HTTP_GET, apiEstado);
   server.on("/api/entrada.pgm", HTTP_GET, apiEntrada);
+  server.on("/api/rafaga_iniciar", HTTP_POST, apiRafagaIniciar);
+  server.on("/api/rafaga.bin", HTTP_GET, apiRafagaDatos);
+  server.on("/api/rafaga_cancelar", HTTP_POST, apiRafagaCancelar);
   server.on("/api/wifi", HTTP_POST, apiWiFi);
   server.on("/api/devkit", HTTP_POST, apiDevkit);
   server.on("/api/probar_devkit", HTTP_POST, apiProbarDevkit);
