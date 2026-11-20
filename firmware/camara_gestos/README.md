@@ -30,11 +30,13 @@ La tarjeta no trae el adaptador USB. Se programa **una vez** con el devkit como 
    | Devkit | ESP32-CAM |
    | --- | --- |
    | EN | GND |
-   | TX0 (GPIO1) | U0R |
-   | RX0 (GPIO3) | U0T |
+   | TX0 (GPIO1) | U0T (GPIO1) |
+   | RX0 (GPIO3) | U0R (GPIO3) |
    | 5V (VIN) | 5V |
    | GND | GND |
    | (cable aparte) | IO0 a GND |
+
+   Van **derechos, TX con TX y RX con RX** (no cruzados): los nombres del devkit están puestos desde el punto de vista de su procesador, que aquí está apagado, así que el chip USB queda "al revés".
 
    `IO0` a `GND` en la cámara pone la placa en modo de carga. Usa un cable USB bueno: si la cámara se reinicia sola al intentar, casi siempre es poca corriente. Un condensador de 100 a 470 µF entre 5V y GND ayuda.
 2. En Arduino IDE: placa **AI Thinker ESP32-CAM**, y en *Herramientas, Partition Scheme* elige **Minimal SPIFFS (1.9MB APP with OTA/190KB SPIFFS)**. Este paso es obligatorio: con el esquema normal el cambio por WiFi no funciona y habría que volver al cable.
