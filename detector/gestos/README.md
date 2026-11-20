@@ -18,6 +18,17 @@ python verificar_firmware.py           # comprueba que el C++ de la cámara da l
 
 Las fotos llevan el nombre `<clase>_s<sesión>_<número>.pgm` dentro de cada `.zip` (por ejemplo `puno_s03_0012.pgm`), como las deja la página de la cámara. También se leen `.pgm` sueltos.
 
+## Sin sacar fotos: dataset público (HaGRID)
+
+[HaGRID](https://github.com/ai-forever/hagrid) (Kapitanov et al., WACV 2024, licencia CC BY-SA 4.0) tiene fotos de miles de personas con `palm` (mano abierta), `fist` (puño) y `no_gesture`. La versión reducida [`hagrid-sample-30k-384p`](https://huggingface.co/datasets/cj-mills/hagrid-sample-30k-384p) pesa 1 GB.
+
+1. Baja `hagrid-sample-30k-384p.zip` y descomprímelo en `detector/gestos/publico/`.
+2. `pip install numpy pillow`
+3. `python preparar_publico.py publico` recorta alrededor de la mano, la pasa a 80x60 en gris y escribe `fotos/publico_abierta.zip`, `publico_puno.zip` y `publico_nada.zip`, con cada persona como una sesión.
+4. `python entrenar_gestos.py` entrena con esos zips (y con los de la cámara, si los hay).
+
+Limitación: son fotos de otras cámaras y cuartos. En la cámara real la exactitud suele ser menor que la que muestra el entrenador; con unas pocas tandas propias (sobre todo de "nada" con tu cuarto) mejora bastante. Las fotos propias llevan sesiones `s01`, `s02`...; las públicas, `s100` en adelante.
+
 ## Qué mirar en el resultado
 
 - Cada **sesión** (una tanda de fotos) se queda completa en entrenamiento o en validación, nunca partida. Si se mezclaran fotos de la misma tanda, parecerían casi iguales y la exactitud saldría inflada. Por eso piden al menos 3 sesiones por gesto.

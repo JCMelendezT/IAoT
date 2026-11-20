@@ -30,6 +30,7 @@ detector/captura-datos/raw/*
 # Fotos de gestos (caras, manos, cuartos): solo en local
 detector/gestos/fotos/*
 !detector/gestos/fotos/.gitkeep
+detector/gestos/publico/
 
 practica-1/datos/*.db
 practica-1/datos/*.sqlite
