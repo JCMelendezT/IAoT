@@ -251,6 +251,36 @@ void accionArmarDesarmar() {
 }
 
 // ---- camara y reconocimiento ----
+// Exposicion y ganancia automaticas (sin esto, con algunas versiones del nucleo la imagen sale toda blanca)
+void ajustarSensor() {
+  sensor_t* s = esp_camera_sensor_get();
+  if (!s) return;
+  s->set_brightness(s, 0); s->set_contrast(s, 0); s->set_saturation(s, 0);
+  s->set_whitebal(s, 1); s->set_awb_gain(s, 1);
+  s->set_exposure_ctrl(s, 1); s->set_aec2(s, 1); s->set_ae_level(s, 0);
+  s->set_gain_ctrl(s, 1); s->set_gainceiling(s, (gainceiling_t)2);
+  s->set_lenc(s, 1); s->set_bpc(s, 1); s->set_wpc(s, 1);
+  for (int i = 0; i < 6; i++) { camera_fb_t* fb = esp_camera_fb_get(); if (fb) esp_camera_fb_return(fb); delay(60); }
+}
+
+// Para probar ajustes por WiFi sin recompilar: /api/sensor?n=aec_value&v=300
+void apiSensor() {
+  sensor_t* s = esp_camera_sensor_get();
+  if (!s || !camaraOk) { server.send(503, "text/plain", "sin camara"); return; }
+  String n = server.arg("n"); int v = server.arg("v").toInt(); int r = -99;
+  if (n == "brightness") r = s->set_brightness(s, v);
+  else if (n == "contrast") r = s->set_contrast(s, v);
+  else if (n == "aec") r = s->set_exposure_ctrl(s, v);
+  else if (n == "aec_value") r = s->set_aec_value(s, v);
+  else if (n == "ae_level") r = s->set_ae_level(s, v);
+  else if (n == "agc") r = s->set_gain_ctrl(s, v);
+  else if (n == "agc_gain") r = s->set_agc_gain(s, v);
+  else if (n == "gainceiling") r = s->set_gainceiling(s, (gainceiling_t)v);
+  else if (n == "hmirror") r = s->set_hmirror(s, v);
+  else if (n == "vflip") r = s->set_vflip(s, v);
+  server.send(200, "text/plain", "ok " + n + "=" + String(v) + " r=" + String(r));
+}
+
 bool iniciarCamara() {
   camera_config_t c = {};
   c.ledc_channel = LEDC_CHANNEL_0; c.ledc_timer = LEDC_TIMER_0;
@@ -268,6 +298,7 @@ bool iniciarCamara() {
   c.grab_mode = CAMERA_GRAB_LATEST;
   esp_err_t e = esp_camera_init(&c);
   if (e != ESP_OK) { Serial.printf("La camara no inicia (0x%x). Revisa el cable de la camara y la alimentacion de 5V.\n", e); return false; }
+  ajustarSensor();
   return true;
 }
 
@@ -411,6 +442,7 @@ void apiEstado() {
   String s = "{";
   s += "\"modo\":\"" + String(modoSeguro ? "seguro" : (enAP ? "ap" : "normal")) + "\",";
   s += "\"camara\":" + String(camaraOk ? "true" : "false") + ",";
+  { uint32_t t = 0; for (int i = 0; i < gestos::ANCHO * gestos::ALTO; i++) t += ultima[i]; s += "\"brillo\":" + String(t / (gestos::ANCHO * gestos::ALTO)) + ","; }
   s += "\"ip\":\"" + (enAP ? WiFi.softAPIP().toString() : WiFi.localIP().toString()) + "\",";
   s += "\"wifi\":\"" + escapar(enAP ? String(AP_NOMBRE) : WiFi.SSID()) + "\",";
   s += "\"rssi\":" + String(enAP ? 0 : WiFi.RSSI()) + ",";
@@ -505,6 +537,7 @@ void configurarServidor() {
   server.on("/", HTTP_GET, []() { server.send_P(200, "text/html; charset=utf-8", PAGINA); });
   server.on("/api/estado", HTTP_GET, apiEstado);
   server.on("/api/entrada.pgm", HTTP_GET, apiEntrada);
+  server.on("/api/sensor", HTTP_GET, apiSensor);
   server.on("/api/rafaga_iniciar", HTTP_POST, apiRafagaIniciar);
   server.on("/api/rafaga.bin", HTTP_GET, apiRafagaDatos);
   server.on("/api/rafaga_cancelar", HTTP_POST, apiRafagaCancelar);
