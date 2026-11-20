@@ -1,13 +1,14 @@
-// Reconocedor de gestos: la misma red que entrena detector/gestos/entrenar_gestos.py.
+// Reconocedor de gestos: la misma red que entrenan detector/gestos/entrenar_gestos.py (3 capas)
+// y detector/gestos/entrenar_gestos_torch.py (de 2 a 6 capas, la que se recomienda).
 // No usa nada de Arduino, asi se prueba en el PC (prueba_pc/).
 //
-//   foto 80x60 en gris -> conv 3x3 (8) + ReLU + pool 2x2
-//                      -> conv 3x3 (16) + ReLU + pool 2x2
-//                      -> conv 3x3 (24) + ReLU -> promedio de cada canal -> 3 salidas -> softmax
+//   foto 80x60 en gris -> [conv 3x3 + ReLU + submuestreo 2x2] x (capas - 1)
+//                      -> conv 3x3 + ReLU -> promedio de cada canal -> 3 salidas -> softmax
 //
-// Los 4803 numeros de la red no estan en el codigo: se cargan de un archivo (modelo_gestos.bin),
-// asi el modelo se cambia por WiFi sin recompilar.
+// Los numeros de la red NO estan en el codigo: se cargan de un archivo (modelo_gestos.bin) que
+// tambien dice cuantas capas y canales tiene, asi el modelo se cambia por WiFi sin recompilar.
 #pragma once
+#pragma GCC optimize("O3")
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -20,17 +21,17 @@
 
 namespace gestos {
 
-enum { ANCHO = 80, ALTO = 60, CLASES = 3, C1 = 8, C2 = 16, C3 = 24 };
-enum {
-  N_PARAM = (C1 * 9 * 1 + C1) + (C2 * 9 * C1 + C2) + (C3 * 9 * C2 + C3) + (CLASES * C3 + CLASES)
-};
+enum { ANCHO = 80, ALTO = 60, CLASES = 3, MAX_CAPAS = 6, MAX_CANALES = 128 };
 static const char* const NOMBRES[CLASES] = {"nada", "abierta", "puno"};
 
 struct Red {
   bool listo = false;
+  int capas = 0;
+  int canales[MAX_CAPAS] = {0};
   float media = 0, desv = 1;
   uint32_t suma = 0;                 // suma de comprobacion del archivo (para mostrarla)
-  float *p = nullptr, *ent = nullptr, *b1 = nullptr, *b2 = nullptr, *b3 = nullptr, *b4 = nullptr, *b5 = nullptr;
+  float *p = nullptr, *ent = nullptr, *a = nullptr, *b = nullptr;
+  size_t n_a = 0, n_b = 0;
 };
 
 inline uint32_t fnv1a(const uint8_t* d, size_t n) {
@@ -40,40 +41,86 @@ inline uint32_t fnv1a(const uint8_t* d, size_t n) {
 }
 
 inline void liberar(Red& r) {
-  free(r.p); free(r.ent); free(r.b1); free(r.b2); free(r.b3); free(r.b4); free(r.b5);
+  free(r.p); free(r.ent); free(r.a); free(r.b);
   r = Red();
 }
 
+// Numero de parametros de una red con esos canales
+inline size_t contar_parametros(int capas, const int* ch) {
+  size_t n = 0;
+  int ci = 1;
+  for (int i = 0; i < capas; i++) { n += (size_t)ch[i] * 9 * ci + ch[i]; ci = ch[i]; }
+  return n + (size_t)CLASES * ci + CLASES;
+}
+
+// Escribe, por ejemplo, "8-16-32-48"
+inline void describir(const Red& r, char* s, size_t n) {
+  size_t k = 0;
+  s[0] = 0;
+  for (int i = 0; i < r.capas && k + 6 < n; i++) k += snprintf(s + k, n - k, i ? "-%d" : "%d", r.canales[i]);
+}
+
 // Devuelve nullptr si todo salio bien, o el motivo del error.
+//   version 1: cabecera de 24 bytes, red fija de 3 capas (8, 16, 24 canales)
+//   version 2: cabecera de 24 bytes + 8 bytes con la cantidad de canales de cada capa
 inline const char* cargar(Red& r, const uint8_t* d, size_t n) {
-  const size_t CAB = 24, CUERPO = (size_t)N_PARAM * 4;
-  if (n != CAB + CUERPO + 4) return "tamano distinto al esperado";
+  if (n < 32) return "archivo demasiado corto";
   if (memcmp(d, "GEST", 4)) return "no es un modelo de gestos";
-  uint16_t version, w, h; uint8_t nc; float media, desv; uint32_t np, suma;
-  memcpy(&version, d + 4, 2); memcpy(&w, d + 6, 2); memcpy(&h, d + 8, 2); nc = d[10];
+  uint16_t version, w, h; uint8_t nc, capas; float media, desv; uint32_t np, suma;
+  memcpy(&version, d + 4, 2); memcpy(&w, d + 6, 2); memcpy(&h, d + 8, 2); nc = d[10]; capas = d[11];
   memcpy(&media, d + 12, 4); memcpy(&desv, d + 16, 4); memcpy(&np, d + 20, 4);
-  if (version != 1) return "version de modelo desconocida";
+  if (version != 1 && version != 2) return "version de modelo desconocida";
   if (w != ANCHO || h != ALTO || nc != CLASES) return "la red no tiene la forma esperada";
-  if (np != N_PARAM) return "numero de parametros distinto";
   if (!(desv > 1e-6f)) return "desviacion invalida";
-  memcpy(&suma, d + CAB + CUERPO, 4);
-  if (fnv1a(d + CAB, CUERPO) != suma) return "archivo danado (suma de comprobacion)";
+
+  int ch[MAX_CAPAS] = {0};
+  size_t cab = 24;
+  if (version == 1) {
+    capas = 3; ch[0] = 8; ch[1] = 16; ch[2] = 24;
+  } else {
+    cab = 32;
+    if (capas < 2 || capas > MAX_CAPAS) return "cantidad de capas no valida";
+    for (int i = 0; i < capas; i++) {
+      ch[i] = d[24 + i];
+      if (ch[i] < 1 || ch[i] > MAX_CANALES) return "cantidad de canales no valida";
+    }
+  }
+  if (np != contar_parametros(capas, ch)) return "numero de parametros distinto";
+  const size_t cuerpo = (size_t)np * 4;
+  if (n != cab + cuerpo + 4) return "tamano distinto al esperado";
+  memcpy(&suma, d + cab + cuerpo, 4);
+  if (fnv1a(d + cab, cuerpo) != suma) return "archivo danado (suma de comprobacion)";
+
+  // tamanos de los dos buffers de trabajo (salida de la convolucion y salida del submuestreo)
+  size_t na = 0, nb = 0;
+  int H = ALTO, W2 = ANCHO;
+  for (int i = 0; i < capas; i++) {
+    size_t conv = (size_t)H * W2 * ch[i];
+    if (conv > na) na = conv;
+    if (i < capas - 1) {
+      H /= 2; W2 /= 2;
+      if (H < 1 || W2 < 1) return "demasiadas capas";
+      size_t pool = (size_t)H * W2 * ch[i];
+      if (pool > nb) nb = pool;
+    }
+  }
 
   liberar(r);
-  r.p   = (float*)GESTOS_ASIGNAR(CUERPO);
+  r.p   = (float*)GESTOS_ASIGNAR(cuerpo);
   r.ent = (float*)GESTOS_ASIGNAR(sizeof(float) * ANCHO * ALTO);
-  r.b1  = (float*)GESTOS_ASIGNAR(sizeof(float) * ANCHO * ALTO * C1);
-  r.b2  = (float*)GESTOS_ASIGNAR(sizeof(float) * (ANCHO / 2) * (ALTO / 2) * C1);
-  r.b3  = (float*)GESTOS_ASIGNAR(sizeof(float) * (ANCHO / 2) * (ALTO / 2) * C2);
-  r.b4  = (float*)GESTOS_ASIGNAR(sizeof(float) * (ANCHO / 4) * (ALTO / 4) * C2);
-  r.b5  = (float*)GESTOS_ASIGNAR(sizeof(float) * (ANCHO / 4) * (ALTO / 4) * C3);
-  if (!r.p || !r.ent || !r.b1 || !r.b2 || !r.b3 || !r.b4 || !r.b5) { liberar(r); return "sin memoria"; }
-  memcpy(r.p, d + CAB, CUERPO);
+  r.a   = (float*)GESTOS_ASIGNAR(sizeof(float) * na);
+  r.b   = (float*)GESTOS_ASIGNAR(sizeof(float) * nb);
+  if (!r.p || !r.ent || !r.a || !r.b) { liberar(r); return "sin memoria"; }
+  memcpy(r.p, d + cab, cuerpo);
+  r.capas = capas;
+  for (int i = 0; i < capas; i++) r.canales[i] = ch[i];
+  r.n_a = na; r.n_b = nb;
   r.media = media; r.desv = desv; r.suma = suma; r.listo = true;
   return nullptr;
 }
 
 // Convolucion 3x3, relleno con ceros, ReLU. Imagenes en orden alto x ancho x canales.
+// Pesos: [salida][fila][columna][entrada].
 inline void conv3(const float* in, int H, int W, int Ci, const float* w, const float* b, int Co, float* out) {
   for (int y = 0; y < H; y++)
     for (int x = 0; x < W; x++)
@@ -94,6 +141,7 @@ inline void conv3(const float* in, int H, int W, int Ci, const float* w, const f
       }
 }
 
+// Maximo de cada cuadro de 2x2 (si el alto o el ancho es impar, la ultima fila o columna se descarta)
 inline void pool2(const float* in, int H, int W, int C, float* out) {
   int h = H / 2, w = W / 2;
   for (int y = 0; y < h; y++)
@@ -113,29 +161,37 @@ inline void pool2(const float* in, int H, int W, int C, float* out) {
 // img: 80x60 bytes en gris. prob: 3 probabilidades (nada, abierta, puno).
 inline bool inferir(Red& r, const uint8_t* img, float* prob) {
   if (!r.listo) return false;
-  const float* c1w = r.p;            const float* c1b = c1w + C1 * 9 * 1;
-  const float* c2w = c1b + C1;       const float* c2b = c2w + C2 * 9 * C1;
-  const float* c3w = c2b + C2;       const float* c3b = c3w + C3 * 9 * C2;
-  const float* dw  = c3b + C3;       const float* db  = dw + CLASES * C3;
-
   for (int i = 0; i < ANCHO * ALTO; i++) r.ent[i] = (img[i] / 255.0f - r.media) / r.desv;
-  conv3(r.ent, ALTO, ANCHO, 1, c1w, c1b, C1, r.b1);
-  pool2(r.b1, ALTO, ANCHO, C1, r.b2);
-  conv3(r.b2, ALTO / 2, ANCHO / 2, C1, c2w, c2b, C2, r.b3);
-  pool2(r.b3, ALTO / 2, ANCHO / 2, C2, r.b4);
-  conv3(r.b4, ALTO / 4, ANCHO / 4, C2, c3w, c3b, C3, r.b5);
 
-  const int HW = (ALTO / 4) * (ANCHO / 4);
-  float g[C3];
-  for (int c = 0; c < C3; c++) {
+  const float* p = r.p;
+  const float* x = r.ent;
+  int H = ALTO, W = ANCHO, Ci = 1;
+  for (int i = 0; i < r.capas; i++) {
+    const int Co = r.canales[i];
+    const float* w = p;  p += (size_t)Co * 9 * Ci;
+    const float* b = p;  p += Co;
+    conv3(x, H, W, Ci, w, b, Co, r.a);
+    if (i < r.capas - 1) {
+      pool2(r.a, H, W, Co, r.b);
+      H /= 2; W /= 2;
+      x = r.b;
+    }
+    Ci = Co;
+  }
+  const float* dw = p;
+  const float* db = p + (size_t)CLASES * Ci;
+
+  const int HW = H * W;
+  float g[MAX_CANALES];
+  for (int c = 0; c < Ci; c++) {
     float s = 0;
-    for (int i = 0; i < HW; i++) s += r.b5[(size_t)i * C3 + c];
+    for (int i = 0; i < HW; i++) s += r.a[(size_t)i * Ci + c];
     g[c] = s / HW;
   }
   float z[CLASES], zmax = -1e30f;
   for (int k = 0; k < CLASES; k++) {
     float s = db[k];
-    for (int c = 0; c < C3; c++) s += g[c] * dw[k * C3 + c];
+    for (int c = 0; c < Ci; c++) s += g[c] * dw[k * Ci + c];
     z[k] = s;
     if (s > zmax) zmax = s;
   }

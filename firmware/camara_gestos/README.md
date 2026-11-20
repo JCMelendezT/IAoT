@@ -52,7 +52,7 @@ Si no hay WiFi conocido, la cámara crea su propia red `CAMARA-RF` (clave `camar
 1. Abre `http://camara.local` en el PC (Chrome o Edge). Arriba ves lo que ve la cámara.
 2. Usa **Sesión guiada**: pulsas un botón y la página te dice en voz alta qué gesto hacer (mano abierta, puño, nada), cuenta con pitidos y baja sola un `.zip` por tanda. Con 3 rondas son unos 4 minutos. La cámara graba cada tanda por dentro y la página la baja al final, así que si la página se pone lenta no se pierden fotos. Guarda los `.zip` en [`detector/gestos/fotos/`](../../detector/gestos/fotos/). También hay *Sacar fotos a mano* para una sola tanda.
 3. Hacen falta **varias tandas por gesto** (mínimo 3 por clase, lo ideal 6): de 150 a 300 fotos por gesto en total, cambiando el fondo, la luz, la distancia y la mano. La clase **Nada** es la que más importa: pon ahí lo que la cámara ve normalmente (la persona sentada, el escritorio, una mano quieta) para que no dispare sin querer.
-4. En el PC: `python entrenar_gestos.py` dentro de [`detector/gestos/`](../../detector/gestos/). Dice la exactitud con sesiones que no vio, la matriz de confusión y cuántos disparos falsos por hora tendría.
+4. En el PC: `python entrenar_gestos_torch.py` (antes: `pip install torch`) dentro de [`detector/gestos/`](../../detector/gestos/). Dice la exactitud con sesiones que no vio, la matriz de confusión y cuántos disparos falsos por hora tendría.
 5. En la página, sección **Subir el modelo**: elige `detector/gestos/modelo/modelo_gestos.bin`. La cámara lo revisa (tamaño y suma de comprobación) y, si está bien, lo usa en el acto y lo guarda. Si está dañado lo rechaza y deja el anterior.
 
 Las fotos de caras, manos y cuartos no se suben a GitHub (`detector/gestos/fotos/` está en `.gitignore`).

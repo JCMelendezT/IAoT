@@ -82,6 +82,28 @@ def recortar(img, anot, rng):
     return img.crop((int(x0), int(y0), int(x0 + ancho), int(y0 + alto)))
 
 
+def recorte_sin_mano(img, anot, rng):
+    """Recorte de la persona o el fondo sin ninguna mano de gesto adentro (la clase 'nada')."""
+    w, h = img.size
+    cajas = [(b[0] * w, b[1] * h, (b[0] + b[2]) * w, (b[1] + b[3]) * h) for b in (anot or {}).get("bboxes", [])]
+    if not cajas:
+        return None
+    base = min(w, h * 4 / 3)
+    for _ in range(40):
+        ancho = base * rng.uniform(0.35, 0.8)
+        alto = ancho * 0.75
+        x0, y0 = rng.uniform(0, w - ancho), rng.uniform(0, h - alto)
+        libre = True
+        for (a, b, c, d) in cajas:
+            mx, my = (c - a) * 0.15, (d - b) * 0.15            # margen alrededor de la mano
+            if x0 < c + mx and x0 + ancho > a - mx and y0 < d + my and y0 + alto > b - my:
+                libre = False
+                break
+        if libre:
+            return img.crop((int(x0), int(y0), int(x0 + ancho), int(y0 + alto)))
+    return None
+
+
 def a_pgm(img):
     g = img.convert("L").resize((ANCHO, ALTO), Image.BOX)
     return b"P5\n%d %d\n255\n" % (ANCHO, ALTO) + g.tobytes()
@@ -93,7 +115,9 @@ def main():
     ap.add_argument("--salida", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "fotos"))
     ap.add_argument("--max-por-clase", type=int, default=1500)
     ap.add_argument("--max-por-persona", type=int, default=25)
-    ap.add_argument("--sin-otros", action="store_true", help="'nada' solo con no_gesture")
+    ap.add_argument("--sin-otros", action="store_true", help="'nada' sin gestos distintos como negativos dificiles")
+    ap.add_argument("--nada-sin-mano", type=float, default=0.7,
+                    help="parte de 'nada' hecha con recortes sin mano (el resto: otros gestos). Defecto 0.7")
     ap.add_argument("--semilla", type=int, default=1)
     a = ap.parse_args()
     rng = random.Random(a.semilla)
@@ -102,13 +126,17 @@ def main():
     ann = cargar_anotaciones(a.carpeta)
     print("  anotaciones encontradas:", len(ann))
     candidatas = collections.defaultdict(list)       # clase nuestra -> [(ruta, clave, etiqueta)]
+    todas = []                                       # cualquier foto con mano anotada (para 'nada' sin mano)
     for base, _, archivos in os.walk(a.carpeta):
         for nombre in archivos:
             if not nombre.lower().endswith(EXT):
                 continue
             ruta = os.path.join(base, nombre)
             et = etiqueta_de_ruta(ruta)
-            if et is None or et in EXCLUIDOS:
+            if et is None:
+                continue
+            todas.append((ruta, os.path.splitext(nombre)[0], et))
+            if et in EXCLUIDOS:
                 continue
             if et in PRINCIPALES:
                 clase = PRINCIPALES[et]
@@ -129,10 +157,18 @@ def main():
             continue
         rng.shuffle(lista)
         # 'nada': no_gesture es lo principal; los otros gestos completan hasta 40 %
-        if clase == "nada" and not a.sin_otros:
+        modo = {}
+        if clase == "nada":
             ng = [x for x in lista if x[2] == "no_gesture"]
             otros = [x for x in lista if x[2] != "no_gesture"]
-            lista = ng + otros[: int(a.max_por_clase * 0.4)]
+            n_sm = int(a.max_por_clase * a.nada_sin_mano)
+            pool = list(todas)
+            rng.shuffle(pool)
+            sin_mano = [(r, k, e) for (r, k, e) in pool if (ann.get(k) or {}).get("bboxes")][:n_sm]
+            for r, k, e in sin_mano:
+                modo[r] = "sin_mano"
+            resto = a.max_por_clase - len(sin_mano) - len(ng)
+            lista = ng + sin_mano + (otros[:max(resto, 0)] if not a.sin_otros else [])
             rng.shuffle(lista)
         por_persona = collections.defaultdict(list)
         for i, (ruta, clave, et) in enumerate(lista):
@@ -152,7 +188,14 @@ def main():
                 try:
                     with Image.open(ruta) as im:
                         im.load()
-                        pgm = a_pgm(recortar(im.convert("RGB"), ann.get(clave), rng))
+                        rgb = im.convert("RGB")
+                        if modo.get(ruta) == "sin_mano":
+                            rec = recorte_sin_mano(rgb, ann.get(clave), rng)
+                            if rec is None:
+                                continue
+                        else:
+                            rec = recortar(rgb, ann.get(clave), rng)
+                        pgm = a_pgm(rec)
                 except Exception as e:
                     print("  salto", ruta, e)
                     continue

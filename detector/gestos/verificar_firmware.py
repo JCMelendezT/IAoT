@@ -58,7 +58,31 @@ def main():
         r = subprocess.run([exe, malo, rutas[0]], capture_output=True, text=True)
         rechazado = r.returncode == 1 and r.stdout.startswith("ERROR")
         print("modelo danado:", "rechazado OK" if rechazado else "NO lo rechazo, MAL")
-        sys.exit(0 if ok and rechazado else 1)
+        ok = ok and rechazado
+
+        # modelo version 2 (4 capas, BatchNorm fundida) hecho con PyTorch
+        import torch
+        import entrenar_gestos_torch as t
+        torch.manual_seed(3)
+        m = t.Red(t.CANALES, media, desv)
+        for bn in m.bns:
+            bn.running_mean.normal_(0, 0.3); bn.running_var.uniform_(0.5, 2.0)
+            bn.weight.data.uniform_(0.5, 1.5); bn.bias.data.normal_(0, 0.3)
+        m.eval()
+        modelo2 = os.path.join(tmp, "modelo2.bin")
+        t.guardar_modelo(modelo2, m, media, desv)
+        salida = subprocess.run([exe, modelo2] + rutas, check=True, capture_output=True, text=True).stdout
+        c2 = np.array([[float(v) for v in linea.split(",")[1:]] for linea in salida.strip().splitlines()])
+        ref2 = t.probabilidades(m, np.array([g.leer_pgm(r) for r in rutas]))
+        dif2 = float(np.abs(c2 - ref2).max())
+        print(f"modelo v2: diferencia maxima C++ contra PyTorch: {dif2:.2e}", "OK" if dif2 < 1e-4 else "MAL")
+        datos = bytearray(open(modelo2, "rb").read())
+        datos[200] ^= 0xFF
+        open(malo, "wb").write(datos)
+        r = subprocess.run([exe, malo, rutas[0]], capture_output=True, text=True)
+        rech2 = r.returncode == 1 and r.stdout.startswith("ERROR")
+        print("modelo v2 danado:", "rechazado OK" if rech2 else "NO lo rechazo, MAL")
+        sys.exit(0 if ok and dif2 < 1e-4 and rech2 else 1)
 
 
 if __name__ == "__main__":

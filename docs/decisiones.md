@@ -35,3 +35,7 @@ Lo que fui decidiendo y por qué, de lo más reciente a lo más antiguo.
 **18 oct. Las prácticas se orientan al detector.** El profesor autorizó reemplazar el sensor de temperatura y humedad por los datos del nodo. Así avanzaba en las prácticas y en el proyecto al mismo tiempo, en un solo repositorio.
 
 **17 oct. Tema del proyecto.** Entre un radar de presencia con WiFi, aprendizaje federado entre ESP32 y un detector de drones, me quedé con el detector: por los ataques con drones que ha habido en Colombia y porque se podía hacer con lo que ya tenía.
+
+
+## 20 nov 2026 - Gestos: red mas profunda
+Con la red de 3 capas (4803 numeros) el modelo se quedaba en 52 % con personas que no vio. Causas: la clase "nada" solo tenia otros gestos y la red era muy chica. Se probaron variantes con las mismas personas de validacion: 3 capas 8-16-24 con BatchNorm 67 %, 16-32-48 73 %, 4 capas 8-16-32-48 **86 %** (20 mil numeros, 4 millones de multiplicaciones), 5 capas 88 % (no cabe en los 190 KB de LittleFS). Se eligio la de 4 capas. Se entrena con `entrenar_gestos_torch.py`; la BatchNorm se funde en la convolucion al exportar, asi la camara solo hace conv + ReLU. El formato del modelo pasa a la version 2 (dice las capas y canales); la camara lee tambien la version 1. `verificar_firmware.py` comprueba que C++ y PyTorch dan lo mismo (6e-8).

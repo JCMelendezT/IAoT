@@ -272,8 +272,9 @@ def disparos(probs, minimo=MINIMO, ventana=VENTANA, confianza=CONFIANZA):
     return hechos
 
 
-def evaluar(p, imgs, y, grupos, orden, va, media, desv):
-    prob = predecir(p, imgs[va], media, desv)
+def evaluar(p, imgs, y, grupos, orden, va, media, desv, prob=None):
+    if prob is None:
+        prob = predecir(p, imgs[va], media, desv)
     pred = prob.argmax(axis=1)
     yv = y[va]
     conf = np.zeros((len(CLASES), len(CLASES)), dtype=int)

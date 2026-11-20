@@ -24,13 +24,13 @@ if (-not (Test-Path $marca)) {
     Write-Host "1/4 y 2/4 Ya estaba bajado y descomprimido."
 }
 
-Write-Host "3/4 Instalando numpy y pillow..."
-& $py -m pip install --quiet numpy pillow
+Write-Host "3/4 Instalando numpy, pillow y torch (torch pesa unos 200 MB la primera vez)..."
+& $py -m pip install --quiet numpy pillow torch
 Write-Host "4/4 Preparando las fotos (recorte a 80x60 en gris)..."
 & $py (Join-Path $aqui "preparar_publico.py") $dest
 if ($LASTEXITCODE -ne 0) { throw "Fallo la preparacion. Copia el mensaje de arriba y pasaselo a Claude." }
 Write-Host "Entrenando (unos minutos)..."
-& $py (Join-Path $aqui "entrenar_gestos.py")
+& $py (Join-Path $aqui "entrenar_gestos_torch.py")
 Write-Host ""
 Write-Host "Listo. El modelo quedo en: $aqui\modelo\modelo_gestos.bin"
 Write-Host "Subelo en la pagina de la camara (Subir el modelo)."
