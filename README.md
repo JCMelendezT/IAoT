@@ -37,9 +37,10 @@ La matriz de confusión y el detalle están en [`detector/modelos/ficha_modelo.m
 ## Organización
 
 ```
-detector/      captura de datos, entrenamiento, modelo exportado y resultados
+detector/      captura de datos, entrenamiento, modelo exportado y resultados;
+               gestos/ entrena el reconocedor de gestos de la cámara
 firmware/      sketches de Arduino: nodo_detector (S3), devkit_centinela (devkit),
-               nodo_captura y pruebas/ de cada pieza
+               camara_gestos (ESP32-CAM), nodo_captura y pruebas/ de cada pieza
 app/           app web del celular y el reentrenamiento en JavaScript
 mcp/           servidor MCP para que Claude lea el historial de eventos del detector
 docs/          hardware y conexiones, bitácora de decisiones, diagramas, enunciados
@@ -56,7 +57,9 @@ terraform/     infraestructura de las prácticas en Azure y AWS
 3. Para grabar datos nuevos desde el PC: [`firmware/nodo_captura`](firmware/nodo_captura/) y el capturador de [`detector/captura-datos/`](detector/captura-datos/).
 4. Para reentrenar en el PC: `python rasgos.py` y `python entrenar.py` en [`detector/ml/`](detector/ml/). También se puede desde la app del celular.
 
-Hardware: ESP32-S3 DevKitC-1 (clon N16R8), ESP32 devkit, nRF24L01+ PA+LNA con condensador de 100 µF, módulo ISD1820 con parlante de 8 Ω, y un DJI Neo 2 para las pruebas.
+5. Opcional, control por gestos: [`firmware/camara_gestos`](firmware/camara_gestos/) en una ESP32-CAM (mano abierta prueba el sonido, puño arma o desarma). Se carga una vez con cable y después todo es por WiFi. Las fotos se entrenan con [`detector/gestos/`](detector/gestos/).
+
+Hardware: ESP32-S3 DevKitC-1 (clon N16R8), ESP32 devkit, nRF24L01+ PA+LNA con condensador de 100 µF, módulo ISD1820 con parlante de 8 Ω, una ESP32-CAM AI-Thinker para los gestos, y un DJI Neo 2 para las pruebas.
 
 ## Prácticas del curso
 

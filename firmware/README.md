@@ -6,6 +6,7 @@ Todo está hecho para Arduino IDE con el core ESP32 3.x. Las conexiones están e
 | --- | --- | --- |
 | [`nodo_detector`](nodo_detector/) | ESP32-S3 | El detector: escucha, decide con el modelo y alerta |
 | [`devkit_centinela`](devkit_centinela/) | ESP32 devkit | Pasarela: caja negra, app del celular y envío a AWS |
+| [`camara_gestos`](camara_gestos/) | ESP32-CAM | Reconoce mano abierta y puño y le avisa al devkit; se actualiza por WiFi |
 | [`nodo_captura`](nodo_captura/) | ESP32-S3 | Manda las filas del nRF24 y el resumen WiFi al PC para grabar datos |
 
 En [`pruebas/`](pruebas/) están los sketches con los que fui probando cada pieza:

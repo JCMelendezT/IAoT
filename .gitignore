@@ -27,6 +27,10 @@ dependencies.lock
 # Capturas crudas y datos generados (se versiona solo el registro sesiones.csv)
 detector/captura-datos/raw/*
 !detector/captura-datos/raw/.gitkeep
+# Fotos de gestos (caras, manos, cuartos): solo en local
+detector/gestos/fotos/*
+!detector/gestos/fotos/.gitkeep
+
 practica-1/datos/*.db
 practica-1/datos/*.sqlite
 
