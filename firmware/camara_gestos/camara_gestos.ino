@@ -206,21 +206,25 @@ bool resolverDevkit(IPAddress& ip) {
   return true;
 }
 
-// Devuelve el codigo HTTP (o -1 si no se pudo llegar al devkit). La respuesta queda en cuerpo.
+// Devuelve el codigo HTTP (negativo si no se pudo: -1 no conecta, -11 no contesto a tiempo).
+// El devkit puede tardar hasta 4 s en contestar un ajuste porque le pregunta al S3, por eso se
+// espera hasta 7 s. Solo se reintenta si ni siquiera conecto (asi no se repite una orden).
 int devkit(bool post, const String& ruta, String& cuerpo) {
+  int code = -1;
   for (int intento = 0; intento < 2; intento++) {
     IPAddress ip;
     if (!resolverDevkit(ip)) return -1;
     HTTPClient h;
-    h.setTimeout(2500);
-    h.setConnectTimeout(2000);
+    h.setTimeout(7000);
+    h.setConnectTimeout(2500);
     if (!h.begin("http://" + ip.toString() + ruta)) return -1;
-    int code = post ? h.POST("") : h.GET();
+    code = post ? h.POST("") : h.GET();
     if (code > 0) { cuerpo = h.getString(); h.end(); return code; }
     h.end();
+    if (code != HTTPC_ERROR_CONNECTION_REFUSED) return code;   // conecto pero no contesto: no repetir
     devkitIp = IPAddress(0, 0, 0, 0);               // quiza cambio de IP: vuelve a buscarlo
   }
-  return -1;
+  return code;
 }
 
 void anotar(const String& accion, const String& resultado) {
@@ -232,13 +236,13 @@ void accionProbarSonido() {
   String r;
   int c = devkit(true, "/api/ajuste?clave=probar_voz&valor=1", r);
   if (c == 200) { anotar("Mano abierta: probar sonido", "ok"); parpadear(1, 150); }
-  else { anotar("Mano abierta: probar sonido", c < 0 ? "no encuentro el devkit" : "el devkit respondio " + String(c)); parpadear(3, 80); }
+  else { anotar("Mano abierta: probar sonido", c == -11 ? "el devkit tardo en contestar (revisa el cable del S3)" : c < 0 ? "no encuentro el devkit (" + String(c) + ")" : "el devkit respondio " + String(c)); parpadear(3, 80); }
 }
 
 void accionArmarDesarmar() {
   String r;
   int c = devkit(false, "/api/estado", r);
-  if (c != 200) { anotar("Puno: armar o desarmar", c < 0 ? "no encuentro el devkit" : "el devkit respondio " + String(c)); parpadear(3, 80); return; }
+  if (c != 200) { anotar("Puno: armar o desarmar", c == -11 ? "el devkit tardo en contestar (revisa el cable del S3)" : c < 0 ? "no encuentro el devkit (" + String(c) + ")" : "el devkit respondio " + String(c)); parpadear(3, 80); return; }
   int i = r.indexOf("\"voz\":");
   if (i < 0) { anotar("Puno: armar o desarmar", "no encuentro el ajuste voz"); parpadear(3, 80); return; }
   i += 6;
@@ -247,7 +251,7 @@ void accionArmarDesarmar() {
   int nuevo = 1 - actual;
   c = devkit(true, "/api/ajuste?clave=voz&valor=" + String(nuevo), r);
   if (c == 200) { anotar("Puno: armar o desarmar", nuevo ? "ARMADO (voz encendida)" : "DESARMADO (voz apagada)"); parpadear(nuevo ? 2 : 1, 200); }
-  else { anotar("Puno: armar o desarmar", "no pude cambiar la voz (" + String(c) + ")"); parpadear(3, 80); }
+  else { anotar("Puno: armar o desarmar", c > 0 ? "el devkit respondio " + String(c) + " (revisa el cable del S3)" : "no pude cambiar la voz (" + String(c) + ")"); parpadear(3, 80); }
 }
 
 // ---- camara y reconocimiento ----
