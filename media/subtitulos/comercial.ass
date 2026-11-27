@@ -1,0 +1,19 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: S,Montserrat,82,&H00FFFFFF,&H00FFFFFF,&H90000000,&H00000000,-1,0,0,0,100,100,0,0,1,5,3,2,60,60,250,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:07.30,0:00:10.80,S,,0,0,0,,{\fad(120,150)\fscx86\fscy86\t(0,160,\fscx100\fscy100)}¿Quién te está\N{\c&H004D4DFF&}mirando?
+Dialogue: 0,0:00:11.20,0:00:16.80,S,,0,0,0,,{\fad(120,150)\fscx86\fscy86\t(0,160,\fscx100\fscy100)}Hoy cualquiera puede acercar\Nun {\c&H00FFD45F&}dron{\c&H00FFFFFF&} a tu ventana
+Dialogue: 0,0:00:24.30,0:00:27.60,S,,0,0,0,,{\fad(120,150)\fscx86\fscy86\t(0,160,\fscx100\fscy100)}Escucha la {\c&H00FFD45F&}señal{\c&H00FFFFFF&} del dron
+Dialogue: 0,0:00:27.80,0:00:31.80,S,,0,0,0,,{\fad(120,150)\fscx86\fscy86\t(0,160,\fscx100\fscy100)}y te avisa\N{\c&H004D4DFF&}en segundos
+Dialogue: 0,0:00:32.20,0:00:37.70,S,,0,0,0,,{\fad(120,150)\fscx86\fscy86\t(0,160,\fscx100\fscy100)}No graba a nadie.\N{\c&H00FFD45F&}Solo escucha{\c&H00FFFFFF&} el aire.
+Dialogue: 0,0:00:38.20,0:00:41.70,S,,0,0,0,,{\fad(120,150)\fscx86\fscy86\t(0,160,\fscx100\fscy100)}Y lo controlas
+Dialogue: 0,0:00:41.80,0:00:45.80,S,,0,0,0,,{\fad(120,150)\fscx86\fscy86\t(0,160,\fscx100\fscy100)}con un {\c&H00FFD45F&}gesto

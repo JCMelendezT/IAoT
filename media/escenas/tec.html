@@ -1,0 +1,209 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<script src="espectro.js"></script>
+<style>
+:root{--c:#5fd4ff;--r:#ff4d5e;--g:#3ddc84;--a:#ffb020;--t:#e8f1f8;--m:#8aa3b8;--b:rgba(95,212,255,.55)}
+html,body{margin:0;background:transparent;font-family:Montserrat,sans-serif;color:var(--t)}
+#s{position:relative;width:1920px;height:1080px;overflow:hidden}
+.fondo{background:radial-gradient(ellipse 75% 70% at 50% 45%,#0d2740 0%,#06121f 60%,#03070d 100%)}
+.fondo:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(63,192,255,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(63,192,255,.10) 1px,transparent 1px);background-size:60px 60px}
+.x{position:absolute;opacity:0}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+h2{margin:0;font-weight:900;font-size:58px;letter-spacing:1px}
+.sub{font-weight:600;font-size:28px;color:var(--c);margin-top:8px;letter-spacing:1px}
+.kick{font-weight:700;font-size:22px;letter-spacing:4px;color:var(--m)}
+.box{background:rgba(8,22,38,.88);border:2px solid var(--b);border-radius:18px;padding:18px 24px;box-shadow:0 0 30px rgba(95,212,255,.15)}
+.box b{display:block;font-size:30px;font-weight:800}
+.box i{display:block;font-style:normal;font-size:21px;color:var(--m);margin-top:6px;line-height:1.35}
+.tag{font-size:19px;font-weight:700;color:var(--c);background:rgba(3,10,18,.9);padding:4px 10px;border-radius:8px;white-space:nowrap}
+.card{background:rgba(8,22,38,.9);border:2px solid var(--b);border-radius:20px;padding:22px 28px}
+.big{font-weight:900;font-size:84px;line-height:1}
+.lbl{font-size:22px;color:var(--m);margin-top:8px;font-weight:600}
+.step{display:flex;align-items:center;gap:18px;margin:0 0 16px}
+.step .n{width:46px;height:46px;border-radius:50%;border:2px solid var(--c);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--c);font-size:22px;flex:none}
+.step .tx b{font-size:28px;font-weight:800;display:block}.step .tx i{font-style:normal;font-size:20px;color:var(--m)}
+table.cm{border-collapse:separate;border-spacing:8px}
+table.cm td,table.cm th{width:150px;height:96px;text-align:center;font-weight:800;font-size:36px;border-radius:12px}
+table.cm th{font-size:22px;color:var(--m);font-weight:700;height:40px}
+table.cm th.r{width:150px;text-align:right;padding-right:10px}
+.bar{height:22px;border-radius:11px;background:rgba(95,212,255,.12);overflow:hidden}.bar>div{height:100%;border-radius:11px}
+.layer{position:absolute;border:2px solid var(--c);background:rgba(95,212,255,.10);border-radius:10px;transform:skewY(-12deg)}
+.ll{position:absolute;text-align:center;font-size:20px;font-weight:700;color:var(--t);transform:translateX(-50%);white-space:nowrap}
+.ll i{display:block;font-style:normal;color:var(--m);font-weight:600;font-size:17px}
+.pill{display:inline-block;border:2px solid var(--b);border-radius:30px;padding:10px 22px;font-weight:700;font-size:24px;margin:0 12px 14px 0;background:rgba(8,22,38,.85)}
+.pill span{color:var(--c)}
+.li{font-size:31px;margin:0 0 22px;line-height:1.35}.li b{color:var(--a)}
+.tit{text-shadow:0 0 40px rgba(95,212,255,.5)}
+</style></head><body><div id="s"></div>
+<script>
+const E = new URLSearchParams(location.search).get('e');
+const S = document.getElementById('s');
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)), ramp=(t,a,b)=>clamp((t-a)/(b-a));
+const ease=x=>1-Math.pow(1-x,3);
+function el(html, css){ const d=document.createElement('div'); d.className='x'; d.innerHTML=html; Object.assign(d.style,css); S.appendChild(d); return d; }
+const anims=[];  // [elemento, inicio, desplazamiento]
+function A(e,t0,dy=24,dx=0){ anims.push([e,t0,dy,dx]); return e; }
+function aplicar(t){ for(const [e,t0,dy,dx] of anims){ const k=ease(ramp(t,t0,t0+0.5)); e.style.opacity=k; e.style.transform=`translate(${(1-k)*dx}px,${(1-k)*dy}px)`; } }
+let extra=()=>{};
+const titulo=(k,h,s,t0=0)=>{ A(el(`<div class="kick">${k}</div><h2>${h}</h2>${s?`<div class="sub">${s}</div>`:''}`,{left:'90px',top:'60px'}),t0); };
+
+if (E==='arq'){
+  S.classList.add('fondo');
+  titulo('ARQUITECTURA','Tres placas, una sola decisión','Cada placa hace una cosa y se comunican por cable o WiFi');
+  const N={
+    nrf:[110,250,'nRF24L01+','Barrido de 2,4 GHz<br>126 canales'],
+    s3:[110,500,'ESP32-S3','Rasgos + regresión logística<br>Decide la alerta'],
+    isd:[110,790,'ISD1820','Voz de alerta'],
+    dk:[790,500,'ESP32 devkit','Pasarela · caja negra<br>App web · AWS'],
+    cam:[790,800,'ESP32-CAM','CNN de gestos<br>80x60 en gris'],
+    app:[1480,230,'App en el celular','http://detector.local'],
+    aws:[1480,480,'AWS IoT Core','MQTT con TLS'],
+    mcp:[1480,730,'Servidor MCP','Historial, solo lectura'],
+  };
+  const t0={nrf:0.6,s3:1.2,isd:2.0,dk:3.0,cam:6.0,app:4.4,aws:4.9,mcp:5.4};
+  const W0=330;
+  for(const k in N){ const [x,y,b,i]=N[k]; A(el(`<div class="box" style="width:${W0}px"><b>${b}</b><i>${i}</i></div>`,{left:x+'px',top:y+'px'}),t0[k]); }
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width',1920); svg.setAttribute('height',1080); svg.style.cssText='position:absolute;inset:0'; S.prepend(svg);
+  const c=(k,dx,dy)=>[N[k][0]+dx,N[k][1]+dy];
+  const E2=[ // de, a, etiqueta, inicio, color
+    [c('nrf',190,128),c('s3',190,0),'SPI · GPIO 9-13',0.9,'#5fd4ff',[200,-8]],
+    [c('s3',190,128),c('isd',190,0),'GPIO 16',1.7,'#5fd4ff',[200,-8]],
+    [c('s3',378,45),c('dk',0,45),'UART 115200 · GPIO 17→16 · ventanas',2.6,'#5fd4ff',[-175,-42]],
+    [c('dk',0,95),c('s3',378,95),'GPIO 17→18 · modelo y ajustes',3.4,'#ffb020',[-150,18]],
+    [c('dk',378,40),c('app',0,60),'HTTP · WiFi',4.3,'#5fd4ff',[0,-30]],
+    [c('dk',378,64),c('aws',0,64),'MQTT',4.8,'#5fd4ff',[0,-30]],
+    [c('dk',378,90),c('mcp',0,64),'/api/historial',5.3,'#5fd4ff',[0,20]],
+    [c('cam',190,0),c('dk',190,140),'HTTP · /api/ajuste',6.4,'#3ddc84',[14,0]],
+  ];
+  const linesEls=E2.map(([a,b,lab,t,col,off])=>{
+    const l=document.createElementNS(svg.namespaceURI,'line'); l.setAttribute('x1',a[0]);l.setAttribute('y1',a[1]);l.setAttribute('x2',b[0]);l.setAttribute('y2',b[1]);
+    l.setAttribute('stroke',col); l.setAttribute('stroke-width',4); l.setAttribute('stroke-linecap','round'); svg.appendChild(l);
+    const len=Math.hypot(b[0]-a[0],b[1]-a[1]); l.setAttribute('stroke-dasharray',len);
+    const dot=document.createElementNS(svg.namespaceURI,'circle'); dot.setAttribute('r',8); dot.setAttribute('fill','#dff6ff'); svg.appendChild(dot);
+    const tg=A(el(`<span class="tag" style="color:${col}">${lab}</span>`,{left:((a[0]+b[0])/2+off[0])+'px',top:((a[1]+b[1])/2+off[1])+'px'}),t+0.3,8);
+    return {l,len,t,a,b,dot};
+  });
+  extra=t=>linesEls.forEach(({l,len,t:t1,a,b,dot})=>{ const k=ease(ramp(t,t1,t1+0.6)); l.setAttribute('stroke-dashoffset',len*(1-k)); const f=((t-t1)*0.6)%1; dot.setAttribute('cx',a[0]+(b[0]-a[0])*f); dot.setAttribute('cy',a[1]+(b[1]-a[1])*f); dot.setAttribute('opacity',k>=1?1:0); });
+}
+
+if (E==='rf'){
+  S.classList.add('fondo');
+  titulo('DETECTOR DE RADIOFRECUENCIA','Del espectro a la decisión','Datos reales del nRF24: una fila cada ~0,26 s, 126 canales de 1 MHz');
+  const cls=[['fondo','Fondo','#3ddc84'],['bluetooth','Bluetooth','#5fd4ff'],['dron','Control de dron','#ff4d5e']];
+  const cvs=cls.map(([k,n,col],i)=>{
+    const d=A(el(`<div style="font-weight:800;font-size:26px;color:${col};margin-bottom:10px">${n}</div><canvas width="252" height="560" style="border:2px solid ${col}66;border-radius:10px;background:#02060b"></canvas><div class="mono" style="font-size:16px;color:#8aa3b8;display:flex;justify-content:space-between;width:256px"><span>2400</span><span>MHz</span><span>2525</span></div>`,{left:(90+i*290)+'px',top:'250px'}),0.5+i*0.4);
+    return [d.querySelector('canvas'),k,col];
+  });
+  const pasos=[
+    ['Barrido','126 canales de 2400 a 2525 MHz con el nRF24, nivel 0 a 8'],
+    ['Ventana de 2 s','Se juntan unas 8 filas del espectro'],
+    ['19 rasgos','14 bandas de 6 MHz + media, banda del dron (2423-2456 MHz), canales activos y variación'],
+    ['Regresión logística','98 números · 392 bytes · corre en el S3'],
+    ['Fondo / Bluetooth / Dron','Probabilidad de cada clase'],
+    ['Alerta','2 ventanas seguidas de dron (≈4 s) · suena el ISD1820'],
+  ];
+  pasos.forEach(([b,i],k)=>A(el(`<div class="step"><div class="n">${k+1}</div><div class="tx"><b>${b}</b><i>${i}</i></div></div>`,{left:'1020px',top:(250+k*112)+'px',width:'820px'}),2.2+k*1.3,0,40));
+  extra=t=>cvs.forEach(([c,k,col])=>{
+    const g=c.getContext('2d'), R=ESPECTRO[k], filas=70, off=Math.floor(t*3.85);
+    g.fillStyle='#02060b'; g.fillRect(0,0,252,560);
+    for(let r=0;r<filas;r++){ const row=R[(off+r)%R.length]; for(let ch=0;ch<126;ch++){ const v=row[ch]; if(!v) continue; const a=Math.min(1,v/6);
+      g.fillStyle=col; g.globalAlpha=0.15+0.85*a; g.fillRect(ch*2,560-(r+1)*8,2,8);} }
+    g.globalAlpha=1;
+  });
+}
+
+if (E==='res'){
+  S.classList.add('fondo');
+  titulo('RESULTADOS DEL DETECTOR','97,4 % de exactitud, 0 falsas alarmas','1134 ventanas de 2 s · validación por bloques de 1 minuto, 10 pliegues');
+  const M=[[296,3,0],[4,293,3],[4,15,516]], n=['Fondo','Bluetooth','Dron'], tot=[299,300,535];
+  let h='<table class="cm"><tr><th></th>'+n.map(x=>`<th>${x}</th>`).join('')+'</tr>';
+  M.forEach((r,i)=>{ h+=`<tr><th class="r">${n[i]}</th>`+r.map((v,j)=>`<td data-v="${v}" data-f="${v/tot[i]}" data-d="${i===j?1:0}">0</td>`).join('')+'</tr>'; });
+  h+='</table><div style="font-size:20px;color:#8aa3b8;margin:6px 0 0 166px">Filas: lo que era · Columnas: lo que dijo el modelo</div>';
+  const tb=A(el(h,{left:'90px',top:'270px'}),0.4);
+  const cards=[['97,4 %','Exactitud (bloques de 1 min)'],['0,973','F1 promedio'],['99,1 %','Exactitud en el último 30 %<br>de cada grabación'],['0','Falsas alarmas con la regla<br>de 2 ventanas seguidas']];
+  cards.forEach(([v,l],k)=>A(el(`<div class="card" style="width:330px"><div class="big" style="color:${k===3?'#3ddc84':'#5fd4ff'}">${v}</div><div class="lbl">${l}</div></div>`,{left:(1000+(k%2)*400)+'px',top:(280+Math.floor(k/2)*260)+'px'}),3.0+k*0.6));
+  A(el(`<div style="font-size:22px;color:#8aa3b8;width:780px">Recall del dron 96,4 % y precisión 99,4 %: cuando dice dron, casi siempre lo es.</div>`,{left:'1000px',top:'830px'}),5.8);
+  const tds=[...tb.querySelectorAll('td')];
+  extra=t=>tds.forEach((td,i)=>{ const k=ease(ramp(t,0.8+i*0.12,1.8+i*0.12)); const v=+td.dataset.v, f=+td.dataset.f, d=td.dataset.d==='1';
+    td.textContent=Math.round(v*k); td.style.background=d?`rgba(95,212,255,${0.12+0.6*f*k})`:`rgba(255,77,94,${0.06+1.5*f*k})`; td.style.color=d&&f*k>0.5?'#04101c':'#e8f1f8'; });
+}
+
+if (E==='atajo'){
+  S.classList.add('fondo');
+  titulo('LO QUE CORREGIMOS','El primer modelo aprendió un atajo','');
+  A(el(`<div class="card" style="width:760px"><div class="kick" style="color:#ff4d5e">ANTES · ESPECTRO + TRÁFICO WIFI</div>
+   <div class="li" style="margin-top:16px">Con el dron, el ESP32 veía <b>37 tramas</b> por ventana; en el fondo, <b>95</b>.</div>
+   <div class="li">El modelo aprendió <b>"poco tráfico = dron"</b>.</div>
+   <div class="li">Simulando una casa de noche (70 % menos tráfico), el <b>98,7 %</b> de las ventanas salía como dron.</div></div>`,{left:'90px',top:'290px'}),0.6,0,-40);
+  A(el(`<div class="card" style="width:760px;border-color:#3ddc8499"><div class="kick" style="color:#3ddc84">AHORA · SOLO EL ESPECTRO DEL nRF24</div>
+   <div class="li" style="margin-top:16px">Se quitaron los rasgos del WiFi: quedan <b>19 rasgos</b> del espectro.</div>
+   <div class="li">Exactitud <b>97,4 %</b> y <b>0 falsas alarmas</b>, también con la noche simulada.</div>
+   <div class="li">El firmware no cambió: escoge los rasgos por nombre.</div></div>`,{left:'1010px',top:'290px'}),3.0,0,40);
+}
+
+if (E==='cnn'){
+  S.classList.add('fondo');
+  titulo('CÁMARA DE GESTOS','Una red convolucional dentro de la ESP32-CAM','Mano abierta = probar sonido · Puño = armar o desarmar · Nada = no hace nada');
+  const L=[['Entrada','80x60 · gris',90,180,0],['Conv 3x3 + ReLU','8 canales · pool 2x2',78,156,1],['Conv 3x3 + ReLU','16 canales · pool 2x2',62,124,2],['Conv 3x3 + ReLU','32 canales · pool 2x2',48,96,3],['Conv 3x3 + ReLU','48 canales · 10x7',38,76,4],['Promedio global','48 valores',22,44,5],['Densa + softmax','nada · abierta · puño',22,44,6]];
+  L.forEach(([n,d,w,hh,g],i)=>{ const x=150+i*255, h=hh*1.6, top=520-h/2;
+    A(el('',{left:(x-w/2)+'px',top:top+'px',width:w+'px',height:h+'px',border:'2px solid '+(i===0?'#e8f1f8':i>4?'#3ddc84':'#5fd4ff'),background:i===0?'rgba(255,255,255,.12)':'rgba(95,212,255,.13)',borderRadius:'8px',transform:'skewY(-14deg)'}),0.5+g*0.45,0,-20);
+    A(el(`<b style="font-size:22px">${n}</b><i style="display:block;font-style:normal;color:#8aa3b8;font-size:18px;margin-top:4px">${d}</i>`,{left:(x-125)+'px',top:'690px',fontWeight:'700',textAlign:'center',whiteSpace:'nowrap',width:'250px'}),0.7+g*0.45,10);
+    if(i<L.length-1) A(el('→',{left:(x+112)+'px',top:'496px',fontSize:'40px',color:'#5fd4ff'}),0.9+g*0.45,0);
+  });
+  const st=[['19 907','parámetros (≈80 KB)'],['4,1 M','multiplicaciones por foto'],['346 ms','por foto en la placa'],['84,6 %','exactitud con personas que no vio']];
+  st.forEach(([v,l],k)=>A(el(`<div class="card" style="width:330px;padding:16px 24px"><div class="big" style="font-size:60px;color:${k===3?'#3ddc84':'#5fd4ff'}">${v}</div><div class="lbl">${l}</div></div>`,{left:(110+k*430)+'px',top:'800px'}),4.6+k*0.5));
+}
+
+if (E==='cnn2'){
+  S.classList.add('fondo');
+  titulo('CÁMARA DE GESTOS','Cómo se entrenó y cómo decide','');
+  A(el(`<div class="card" style="width:800px">
+   <div class="li">Datos: <b>HaGRID</b> (dataset público, CC BY-SA 4.0), recortado a 80x60 en gris. "Nada" son recortes sin mano.</div>
+   <div class="li">Validación con <b>1146 fotos</b> de personas que no estaban en el entrenamiento.</div>
+   <div class="li">PyTorch con BatchNorm; al exportar, la BatchNorm se <b>funde</b> en cada convolución.</div>
+   <div class="li">C++ y PyTorch dan lo mismo: diferencia máxima <b>6 x 10⁻⁸</b>.</div>
+   <div class="li">El modelo se sube por WiFi (formato v2 con suma FNV-1a) y el programa por <b>OTA</b>.</div></div>`,{left:'90px',top:'230px'}),0.5,0,-40);
+  const rc=[['Nada',79.9,'#8aa3b8'],['Mano abierta',94.0,'#5fd4ff'],['Puño',80.3,'#ffb020']];
+  A(el(`<div class="kick">RECALL POR CLASE</div>`,{left:'1040px',top:'240px'}),1.5);
+  const bars=rc.map(([n,v,c],k)=>{ const d=A(el(`<div style="display:flex;justify-content:space-between;font-size:28px;font-weight:800;width:760px;margin-bottom:10px"><span>${n}</span><span>${v.toString().replace('.',',')} %</span></div><div class="bar" style="width:760px"><div style="width:0;background:${c}"></div></div>`,{left:'1040px',top:(300+k*110)+'px'}),1.8+k*0.4); return [d.querySelector('.bar>div'),v,1.8+k*0.4]; });
+  A(el(`<div class="card" style="width:700px;border-color:#3ddc8499"><div class="kick" style="color:#3ddc84">REGLA DE DISPARO</div>
+   <div class="li" style="margin:14px 0 0">5 de las últimas 6 fotos con el mismo gesto y confianza ≥ 0,80. Luego espera 2,5 s y que vuelva "nada".</div></div>`,{left:'1040px',top:'660px'}),3.6);
+  extra=t=>bars.forEach(([b,v,t0])=>b.style.width=(v*ease(ramp(t,t0+0.3,t0+1.3)))+'%');
+}
+
+if (E==='lim'){
+  S.classList.add('fondo');
+  titulo('LÍMITES Y SIGUIENTES PASOS','Lo que falta medir','');
+  const a=['Todo se grabó el mismo día, en un solo lugar y a <b>1 m</b>.','Una grabación por clase: el modelo pudo aprender algo de esa hora.','Solo se probó con un dron con control de <b>2,4 GHz</b>; en 5,8 GHz no se ve.','Los gestos se validaron con fotos públicas, no con la cámara real.'];
+  const b=['Medir a 3, 5 y 10 m y en otros lugares.','Grabar varias sesiones por clase y noches completas.','Medir falsas alarmas por hora en una noche real.','Reentrenar gestos con fotos de la propia cámara.'];
+  A(el(`<div class="kick" style="color:#ffb020">LÍMITES</div>`+a.map(x=>`<div class="li" style="margin-top:18px">· ${x}</div>`).join(''),{left:'90px',top:'250px',width:'820px'}),0.5,0,-30);
+  A(el(`<div class="kick" style="color:#3ddc84">SIGUIENTE</div>`+b.map(x=>`<div class="li" style="margin-top:18px">· ${x}</div>`).join(''),{left:'1010px',top:'250px',width:'820px'}),2.5,0,30);
+}
+
+// --------- capas fijas (PNG con transparencia) sobre el video ---------
+if (E==='o_titulo'){
+  S.style.background='linear-gradient(90deg,rgba(3,7,13,.85),rgba(3,7,13,.25) 60%,transparent)';
+  el(`<div class="kick">IA APLICADA AL IOT · UAO 2026-2</div><h2 class="tit" style="font-size:110px;letter-spacing:6px">CENTINELA RF</h2><div class="sub" style="font-size:38px">Detección pasiva de drones por radiofrecuencia<br>con inteligencia artificial en el borde</div>`,{left:'110px',top:'330px',opacity:1});
+}
+if (E==='o_app'){
+  el(`<div class="card" style="width:640px"><div class="kick">APP SERVIDA POR EL DEVKIT</div>
+   <div class="li" style="margin-top:16px">Estado en vivo y probabilidad de cada clase.</div>
+   <div class="li">Gráfica de los últimos 5 minutos (línea punteada = 50 %).</div>
+   <div class="li">La alerta se enciende con <b>2 ventanas seguidas</b> de dron.</div>
+   <div class="li">Caja negra: <b>8,8 h</b> de ventanas; AWS conectado.</div></div>`,{left:'1180px',top:'260px',opacity:1});
+}
+if (E==='o_dev'){
+  el(`<div class="card" style="width:660px"><div class="kick">EL DEVKIT: PASARELA Y CAJA NEGRA</div>
+   <div class="li" style="margin-top:16px">Guarda cada ventana con sus <b>35 rasgos</b> en 82 bytes.</div>
+   <div class="li">Desde la app se graba con etiqueta y se <b>reentrena en el navegador</b>.</div>
+   <div class="li">El modelo nuevo viaja al S3 por cable, con un hash para detectar errores.</div>
+   <div class="li">Sube las lecturas a <b>AWS IoT Core</b>; un servidor <b>MCP</b> consulta el historial.</div></div>`,{left:'1180px',top:'230px',opacity:1});
+}
+if (E==='o_gest'){
+  el(`<div class="card" style="width:560px;padding:18px 26px"><div class="kick" style="color:#3ddc84">EN VIVO EN LA ESP32-CAM</div>
+   <div class="li" style="margin:12px 0 0">Mano abierta → el devkit prueba el sonido → <b>ok</b></div></div>`,{left:'1290px',top:'80px',opacity:1});
+}
+
+window.render=t=>{ aplicar(t); extra(t); return true; };
+document.fonts.ready.then(()=>{ window.render(0); window.listo=true; });
+</script></body></html>

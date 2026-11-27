@@ -44,6 +44,7 @@ firmware/      sketches de Arduino: nodo_detector (S3), devkit_centinela (devkit
 app/           app web del celular y el reentrenamiento en JavaScript
 mcp/           servidor MCP para que Claude lea el historial de eventos del detector
 docs/          hardware y conexiones, bitácora de decisiones, diagramas, enunciados
+media/         código de los videos (técnico y comercial) y de los dossiers en PDF
 practica-1/    servidor web con FastAPI y PostgreSQL, local y en Azure
 practica-2/    broker MQTT, InfluxDB y Grafana en Azure
 practica-3/    arquitectura serverless en AWS (IoT Core, Lambda, DynamoDB, S3)
@@ -60,6 +61,10 @@ terraform/     infraestructura de las prácticas en Azure y AWS
 5. Opcional, control por gestos: [`firmware/camara_gestos`](firmware/camara_gestos/) en una ESP32-CAM (mano abierta prueba el sonido, puño arma o desarma). Se carga una vez con cable y después todo es por WiFi. Las fotos se entrenan con [`detector/gestos/`](detector/gestos/).
 
 Hardware: ESP32-S3 DevKitC-1 (clon N16R8), ESP32 devkit, nRF24L01+ PA+LNA con condensador de 100 µF, módulo ISD1820 con parlante de 8 Ω, una ESP32-CAM AI-Thinker para los gestos, y un DJI Neo 2 para las pruebas.
+
+## Videos y documentos
+
+Hay dos videos (uno técnico para el profesor y los jurados, y uno comercial para posibles inversionistas) y dos dossiers en PDF con preguntas posibles y el guion de sustentación para 4 personas. El código con el que se hicieron está en [`media/`](media/); los archivos terminados quedan en local porque muestran mi cara y mi casa.
 
 ## Prácticas del curso
 

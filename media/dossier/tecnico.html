@@ -1,0 +1,373 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Centinela RF - Dossier técnico</title><link rel="stylesheet" href="estilo.css"></head><body>
+
+<div class="cover"><img src="img/portada2.jpg"><div class="in">
+<div class="k">DOSSIER TÉCNICO · IA APLICADA AL IOT · UAO 2026-2</div>
+<h1>CENTINELA RF</h1>
+<div class="s">Detección pasiva de drones por radiofrecuencia con inteligencia artificial en el borde, más control por gestos con una ESP32-CAM.</div>
+<div class="m">Para el profesor y los jurados · Qué se hizo, cómo se hizo, qué cubre, preguntas posibles y guion de sustentación para 4 personas<br>Versión del 27 de noviembre de 2026 · Repositorio: github.com/JCMelendezT/IAoT</div>
+</div></div>
+
+<div>
+<div class="kick">Contenido</div>
+<h1>Qué hay en este documento</h1>
+<div class="toc">
+<div><b>1</b>El proyecto en una página</div><div><b>2</b>Problema, alcance y lo que no hace</div><div><b>3</b>Arquitectura y conexiones</div><div><b>4</b>Cómo detecta el dron</div><div><b>5</b>Datos, entrenamiento y validación</div><div><b>6</b>Resultados del detector</div><div><b>7</b>Lo que corregimos en el camino</div><div><b>8</b>Devkit, app, caja negra, AWS y MCP</div><div><b>9</b>Cámara de gestos (visión en la ESP32-CAM)</div><div><b>10</b>Qué cubre del curso</div><div><b>11</b>Cronología</div><div><b>12</b>Límites y siguientes pasos</div><div><b>13</b>Preguntas posibles y respuestas</div><div><b>14</b>Guion de sustentación para 4 personas</div><div><b>15</b>Glosario rápido</div>
+</div>
+
+<h2>1. El proyecto en una página</h2>
+<p class="lead">Centinela RF escucha la banda de 2,4 GHz, reconoce la señal del control de un dron con un modelo que corre dentro de un ESP32-S3 y da la alerta en unos 4 segundos, sin internet y sin transmitir nada.</p>
+<div class="grid4">
+<div class="card"><div class="num">97,4 %</div><div class="lbl">Exactitud del detector (bloques de 1 min, 10 pliegues)</div></div>
+<div class="card g"><div class="num">0</div><div class="lbl">Falsas alarmas con la regla de 2 ventanas seguidas</div></div>
+<div class="card"><div class="num">392 B</div><div class="lbl">Tamaño del modelo del detector (98 números)</div></div>
+<div class="card a"><div class="num">8 m</div><div class="lbl">Alerta dentro de casa con el dron volando</div></div>
+<div class="card"><div class="num">126</div><div class="lbl">Canales de 1 MHz que barre el nRF24</div></div>
+<div class="card"><div class="num">84,6 %</div><div class="lbl">Exactitud de la red de gestos con personas que no vio</div></div>
+<div class="card"><div class="num">346 ms</div><div class="lbl">Por foto en la ESP32-CAM</div></div>
+<div class="card"><div class="num">3</div><div class="lbl">Placas ESP32 + 3 prácticas del curso en un solo repo</div></div>
+</div>
+<p>El sistema tiene tres placas. El <b>ESP32-S3</b> con un <b>nRF24L01+</b> escucha y decide. El <b>ESP32 devkit</b> guarda todo, sirve la app del celular y sube los datos a AWS. La <b>ESP32-CAM</b> corre una red convolucional que reconoce gestos: mano abierta prueba el sonido y puño arma o desarma la voz de alerta.</p>
+</div>
+
+<div class="sec2">
+<div class="kick">2 · Problema</div>
+<h1>Por qué un detector de drones</h1>
+<p>En Colombia los ataques con drones cargados con explosivos crecieron rápido: según UNMAS pasaron de <b>61 en 2024 a 333 en 2025</b>. La Defensoría del Pueblo reportó que entre enero y mayo de 2026 subieron <b>146 %</b> frente al mismo periodo de 2025, con 21 muertos y 145 heridos. Quien está en tierra tiene segundos para saber que hay un dron cerca.</p>
+<p>El objetivo fue demostrar que un equipo barato, con piezas de menos de 50 dólares, puede reconocer la huella de radio del control de un dron comercial y avisar, decidiendo dentro de la placa.</p>
+<figure><img src="img/ataques.svg" style="width:80%;margin:auto"></figure>
+<h2>Alcance</h2>
+<table><tr><th style="width:50%">Lo que hace</th><th>Lo que no hace (a propósito o por límite)</th></tr>
+<tr><td>Detecta el control de un dron que transmite en 2,4 GHz (probado con un DJI Neo 2)</td><td>No interfiere, no bloquea ni derriba drones. Interferir señales sin permiso es ilegal en Colombia</td></tr>
+<tr><td>Distingue tres clases: fondo, Bluetooth y dron</td><td>No ve drones en 5,8 GHz ni manejados solo desde el celular</td></tr>
+<tr><td>Alerta con sonido, LED, app y nube</td><td>No da dirección ni distancia exacta: solo dice que hay un dron cerca</td></tr>
+<tr><td>Funciona sin internet: la decisión está en el S3</td><td>No se ha probado en campo abierto con medición formal</td></tr></table>
+<div class="nota ok"><b>Por qué es pasivo:</b> el S3 solo recibe. No abre enlaces WiFi ni Bluetooth propios porque meterían señal justo en lo que mide; por eso el que habla con el celular es el devkit.</div>
+</div>
+
+<div class="sec2">
+<div class="kick">3 · Arquitectura</div>
+<h1>Tres placas, una sola decisión</h1>
+<figure><img src="img/arq.jpg" style="width:92%;margin:auto"><figcaption>Figura 1. Arquitectura completa: placas, pines, protocolos y servicios.</figcaption></figure>
+<h2>Hardware</h2>
+<table><tr><th>Pieza</th><th>Qué hace</th><th>Detalle</th></tr>
+<tr><td>ESP32-S3 DevKitC-1 (N16R8)</td><td>Cerebro del detector</td><td>Calcula rasgos, corre el modelo, decide la alerta, controla el nRF24 y el sonido</td></tr>
+<tr><td>nRF24L01+ PA+LNA</td><td>Sensor de espectro</td><td>Barre 126 canales de 1 MHz (2400 a 2525 MHz), condensador de 100 µF</td></tr>
+<tr><td>ISD1820 + parlante 8 Ω</td><td>Voz de alerta</td><td>Reproduce lo grabado; suena al empezar la alerta y cada 5 s</td></tr>
+<tr><td>ESP32 devkit (WROOM-32)</td><td>Pasarela</td><td>Caja negra, app web, red propia CENTINELA-RF, AWS, API para el MCP y la cámara</td></tr>
+<tr><td>ESP32-CAM AI-Thinker (OV2640)</td><td>Visión</td><td>CNN de gestos a 80x60 en gris; habla con el devkit por WiFi</td></tr>
+<tr><td>DJI Neo 2</td><td>Dron de prueba</td><td>Control fijado en 2,4 GHz en DJI Fly</td></tr></table>
+<h2>Conexiones</h2>
+<table><tr><th>De</th><th>A</th><th>Cómo</th><th>Para qué</th></tr>
+<tr><td>S3 GPIO 9, 10, 11, 12, 13</td><td>nRF24 CE, CSN, MOSI, SCK, MISO</td><td>SPI</td><td>Leer el espectro</td></tr>
+<tr><td>S3 GPIO 16</td><td>ISD1820 P-E</td><td>Pulso</td><td>Reproducir la alerta</td></tr>
+<tr><td>S3 GPIO 17</td><td>Devkit GPIO 16 (RX2)</td><td>UART 115200</td><td>Ventanas: líneas V, D, R y E</td></tr>
+<tr><td>Devkit GPIO 17 (TX2)</td><td>S3 GPIO 18</td><td>UART 115200</td><td>Modelo nuevo y ajustes</td></tr>
+<tr><td>Devkit 5V y GND</td><td>ESP32-CAM 5V y GND</td><td>Alimentación</td><td>La cámara habla por WiFi</td></tr>
+<tr><td>Devkit</td><td>Celular, AWS, MCP</td><td>HTTP, MQTT con TLS (8883), HTTP</td><td>App, nube, historial</td></tr>
+<tr><td>ESP32-CAM</td><td>Devkit</td><td>HTTP POST <code>/api/ajuste</code></td><td>Probar sonido, armar o desarmar</td></tr></table>
+<div class="nota"><b>Por qué dos placas y no una:</b> el S3 no puede estar en modo de escucha saltando de canal y a la vez conectado al router. Además, su propio WiFi ensuciaría la medición. El S3 solo escucha y el devkit se conecta al mundo.</div>
+</div>
+
+<div class="sec2">
+<div class="kick">4 · Detección</div>
+<h1>Cómo detecta el dron</h1>
+<p class="lead">Cada 2 segundos el S3 convierte lo que oyó en 19 números y una regresión logística decide entre fondo, Bluetooth y dron.</p>
+<div class="flow">
+<div class="st"><b>1. Barrido</b>nRF24: 126 canales, nivel 0 a 8, unas 4 filas por segundo</div><div class="ar">›</div>
+<div class="st"><b>2. Ventana</b>2 s, unas 8 filas del espectro</div><div class="ar">›</div>
+<div class="st"><b>3. Rasgos</b>19 números por ventana</div><div class="ar">›</div>
+<div class="st"><b>4. Modelo</b>Regresión logística, 98 números</div><div class="ar">›</div>
+<div class="st"><b>5. Clase</b>Fondo, Bluetooth o dron, con probabilidad</div><div class="ar">›</div>
+<div class="st"><b>6. Alerta</b>2 ventanas seguidas de dron</div>
+</div>
+<figure><img src="img/rf.jpg" style="width:82%;margin:auto"><figcaption>Figura 2. Espectro real grabado el 10 de noviembre: el control del dron llena la banda central.</figcaption></figure>
+<h2>La huella del dron en el espectro</h2>
+<figure><img src="img/espectro.svg" style="width:88%;margin:auto"><figcaption>Figura 3. Nivel medio por canal en las grabaciones de cada clase. Calculado con las grabaciones crudas del 10 de noviembre.</figcaption></figure>
+<p>En estas grabaciones, la banda de 2423 a 2456 MHz tiene en promedio unas <b>15 veces más actividad</b> con el control del dron que con el fondo. El router de la casa trabaja en el canal 8 (2437 a 2457 MHz), justo dentro de esa banda, así que el fondo ya lo incluye.</p>
+<h2>Los 19 rasgos</h2>
+<table><tr><th>Rasgo</th><th>Cuántos</th><th>Qué mide</th></tr>
+<tr><td><code>banda_2400</code> … <code>banda_2478</code></td><td>14</td><td>Energía en tramos de 6 MHz (los de más arriba siempre valían cero y se quitaron)</td></tr>
+<tr><td><code>esp_media</code></td><td>1</td><td>Nivel medio de todo el espectro</td></tr>
+<tr><td><code>esp_banda_dron</code>, <code>esp_max_banda_dron</code></td><td>2</td><td>Nivel medio y máximo entre 2423 y 2456 MHz</td></tr>
+<tr><td><code>esp_canales_activos</code></td><td>1</td><td>Cuántos canales tienen señal</td></tr>
+<tr><td><code>esp_variacion</code></td><td>1</td><td>Cuánto cambia el espectro entre filas</td></tr></table>
+<div class="nota ok"><b>El modelo cabe en 392 bytes.</b> Es una regresión logística con normalización: 19 medias, 19 escalas, 3 x 19 pesos y 3 sesgos. No hizo falta red neuronal ni cuantizar a int8.</div>
+</div>
+
+<div class="sec2">
+<div class="kick">5 · Datos</div>
+<h1>Datos, entrenamiento y validación</h1>
+<table><tr><th>Grabación (10 nov, estudio, 1 m)</th><th>Clase del modelo</th><th>Ventanas de 2 s</th></tr>
+<tr><td>Fondo (casa normal)</td><td>fondo</td><td>299</td></tr>
+<tr><td>Bluetooth (audífonos, parlante)</td><td>bluetooth</td><td>300</td></tr>
+<tr><td>Dron con control, en tierra</td><td>dron</td><td>300</td></tr>
+<tr><td>Dron con control, volando</td><td>dron</td><td>235</td></tr>
+<tr><td><b>Total</b></td><td></td><td><b>1134</b></td></tr></table>
+<h2>Cómo se hizo</h2>
+<ol>
+<li><b>Captura:</b> firmware <code>nodo_captura</code> en el S3 y el capturador del PC (<code>Capturar.bat</code>), con el devkit desconectado para no ensuciar la medición. Cada grabación queda en <code>raw/</code> y se anota en <code>sesiones.csv</code>.</li>
+<li><b>Ventanas y rasgos:</b> <code>rasgos.py</code> arma ventanas de 2 s con el reloj del ESP32 y calcula los rasgos.</li>
+<li><b>Entrenamiento:</b> <code>entrenar.py</code> normaliza, entrena la regresión logística, evalúa y exporta <code>modelo_detector.h</code>.</li>
+<li><b>Paridad:</b> <code>rasgos_detector.h</code> hace en C++ lo mismo que Python. Las 1134 ventanas dan la misma clase en el PC y en la placa.</li>
+</ol>
+<h2>Validación</h2>
+<p>Se usaron dos pruebas. La principal separa <b>bloques de 1 minuto</b> en 10 pliegues, para que ventanas casi iguales y vecinas no queden en entrenamiento y prueba a la vez. La segunda entrena con el primer 70 % de cada grabación y prueba con el último 30 %, que simula datos posteriores.</p>
+<div class="nota mal"><b>Límite honesto:</b> lo correcto es separar por sesión, pero hubo una sola grabación larga por clase. Por eso se separan minutos, y se declara como límite. Más sesiones en días y lugares distintos es el primer siguiente paso.</div>
+<h2>Cambios frente a la propuesta</h2>
+<table><tr><th>Propuesta (17 oct)</th><th>Lo que se hizo</th><th>Por qué</th></tr>
+<tr><td>Bosque aleatorio + CNN 2D cuantizada a int8 con TFLite Micro</td><td>Regresión logística de 392 bytes</td><td>Fue de los modelos que mejor dieron y es tan pequeña que no necesita cuantizar</td></tr>
+<tr><td>Rasgos WiFi + espectro</td><td>Solo espectro</td><td>El WiFi enseñó un atajo que daba falsas alarmas de noche (sección 7)</td></tr>
+<tr><td>5 clases</td><td>3 clases (fondo, Bluetooth, dron)</td><td>Bluetooth sí lo ve el nodo; "celular con video" no aportaba</td></tr>
+<tr><td>Pantalla TFT con cascada</td><td>Sin pantalla; app web en el celular</td><td>La TFT de 1,8" se quedó en blanco con todo lo probado</td></tr>
+<tr><td>Teclado para etiquetar</td><td>Etiquetas desde la app</td><td>Más cómodo y no requiere el PC</td></tr>
+<tr><td>Sin cámara</td><td>ESP32-CAM con gestos</td><td>Lo pidió el profesor</td></tr></table>
+</div>
+
+<div class="sec2">
+<div class="kick">6 · Resultados</div>
+<h1>Resultados del detector</h1>
+<div class="grid2">
+<div>
+<h3>Matriz de confusión (bloques de 1 min)</h3>
+<table class="cm"><tr><th></th><th>Fondo</th><th>Bluetooth</th><th>Dron</th></tr>
+<tr><th>Fondo</th><td style="background:#0e8fc4;color:#fff">296</td><td style="background:#fde3e6">3</td><td style="background:#f5f8fb">0</td></tr>
+<tr><th>Bluetooth</th><td style="background:#fde3e6">4</td><td style="background:#0e8fc4;color:#fff">293</td><td style="background:#fde3e6">3</td></tr>
+<tr><th>Dron</th><td style="background:#fde3e6">4</td><td style="background:#f9c3ca">15</td><td style="background:#0e8fc4;color:#fff">516</td></tr></table>
+<p class="small">Filas: lo que era. Columnas: lo que dijo el modelo.</p>
+</div>
+<div>
+<h3>Métricas</h3>
+<table><tr><th>Prueba</th><th>Exactitud</th><th>F1</th><th>Falsas alarmas</th></tr>
+<tr><td>Bloques de 1 min</td><td>97,4 %</td><td>0,973</td><td>3 sueltas en 0,33 h; 0 con la regla</td></tr>
+<tr><td>Último 30 %</td><td>99,1 %</td><td>0,991</td><td>0 en 0,10 h</td></tr></table>
+<p>Cuando dice dron acierta el 99,4 % de las veces (precisión). Encuentra el 96,4 % de las ventanas con dron (recall); las que se le escapan las confunde sobre todo con Bluetooth. La regla de dos ventanas seguidas elimina las alarmas sueltas.</p>
+</div></div>
+<figure><img src="img/prf.svg" style="width:78%;margin:auto"><figcaption>Figura 4. Precisión, recall y F1 por clase.</figcaption></figure>
+<h2>Alcance probado</h2>
+<figure><img src="img/distancia.svg" style="width:84%;margin:auto"><figcaption>Figura 5. Distancias con alerta. Fuera de casa se estimaron unos 30 m volando, pero no se midió.</figcaption></figure>
+<p><b>Latencia:</b> la alerta necesita dos ventanas de 2 s, así que lo esperado es unos 4 s desde que el control empieza a transmitir. No se ha cronometrado formalmente.</p>
+</div>
+
+<div class="sec2">
+<div class="kick">7 · Aprendizaje</div>
+<h1>Lo que corregimos en el camino</h1>
+<h2>El atajo del tráfico WiFi (12 nov)</h2>
+<p>El primer modelo usaba también rasgos del WiFi capturados en modo promiscuo. De noche daba falsas alarmas. Al revisar los pesos apareció la causa: mientras se grababa el dron, el ESP32 vio <b>37 tramas por ventana</b>, contra <b>95 en el fondo</b>. El modelo aprendió que "poco tráfico es dron". De noche la casa está quieta y pasa lo mismo.</p>
+<div class="grid2">
+<div class="nota mal"><b>Prueba:</b> simulando el fondo con 70 % menos tráfico, el 98,7 % de las ventanas salía como dron.</div>
+<div class="nota ok"><b>Arreglo:</b> se entrenó solo con el espectro. 97,4 % de exactitud, cero falsas alarmas con la regla y cero con la noche simulada. El firmware no cambió porque escoge los rasgos por nombre.</div>
+</div>
+<p>Es un ejemplo de por qué hay que mirar qué aprende el modelo y no solo la exactitud: el número era bueno y el modelo hacía trampa.</p>
+<h2>Otros problemas resueltos</h2>
+<table><tr><th>Problema</th><th>Causa</th><th>Solución</th></tr>
+<tr><td>6 % de ventanas distintas entre PC y placa</td><td>El PC armaba ventanas con su propia hora de llegada</td><td>Usar el reloj del ESP32 en <code>rasgos.py</code></td></tr>
+<tr><td>El nRF24 no respondía</td><td>Cable de MISO con mal contacto</td><td>Recablear; condensador de 100 µF</td></tr>
+<tr><td>El dron no aparecía en el espectro</td><td>Control en banda dual o 5,8 GHz</td><td>Fijar 2,4 GHz en DJI Fly (límite declarado)</td></tr>
+<tr><td>Red de gestos en 52 %</td><td>Clase "nada" mal hecha y red muy pequeña</td><td>"Nada" sin mano y red de 4 capas con BatchNorm: 84,6 %</td></tr>
+<tr><td>Imagen blanca en la ESP32-CAM</td><td>Exposición del sensor sin ajustar con el núcleo nuevo</td><td>Exposición y ganancia automáticas al arrancar</td></tr>
+<tr><td>Gestos sin respuesta del devkit</td><td>La cámara esperaba 2,5 s y el devkit tarda hasta 4 s al hablar con el S3</td><td>Esperar hasta 7 s y no repetir órdenes</td></tr></table>
+</div>
+
+<div class="sec2">
+<div class="kick">8 · Pasarela y nube</div>
+<h1>Devkit, app, caja negra, AWS y MCP</h1>
+<div class="grid2">
+<figure><img src="img/app_alerta.jpg" style="height:92mm;object-fit:contain;background:#0b0f15"><figcaption>Figura 6. App en el celular durante una alerta.</figcaption></figure>
+<div>
+<h3>App web servida por el devkit</h3>
+<p>Se abre en <code>http://detector.local</code>, o en la red propia CENTINELA-RF si no hay WiFi. No es app nativa: una app de iPhone exige Mac, Xcode y cuenta de desarrollador.</p>
+<ul><li><b>En vivo:</b> estado, probabilidades y gráfica de 5 minutos.</li><li><b>Grabar:</b> sesiones etiquetadas de 2 min a toda la noche.</li><li><b>Datos:</b> línea de tiempo, etiquetar rangos y bajar CSV.</li><li><b>Modelo:</b> reentrenar en el navegador y mandar el modelo al S3.</li><li><b>Ajustes:</b> ventanas para alertar, sonido, prueba de voz, redes WiFi.</li></ul>
+<h3>Caja negra</h3>
+<p>Cada ventana se guarda con sus 35 rasgos en 82 bytes: unas 9 a 12 horas de memoria (la app mostraba 8,8 h). Al llenarse borra lo más viejo.</p>
+<h3>Reentrenamiento en el celular</h3>
+<p>La misma regresión logística de <code>entrenar.py</code> corre en JavaScript; se comparó con scikit-learn y da lo mismo. El modelo nuevo viaja al S3 por el cable GPIO 17→18 con un hash para detectar errores, y el S3 lo guarda.</p>
+</div></div>
+<h2>AWS (Práctica 3)</h2>
+<table><tr><th>Pieza</th><th>Qué hace</th></tr>
+<tr><td>AWS IoT Core</td><td>Recibe por MQTT con certificado (puerto 8883) el topic <code>detector1/nodo-s3/lectura</code> cada 5 s, con clase y probabilidad del modelo</td></tr>
+<tr><td>Reglas de IoT Core + DynamoDB</td><td>Guardan lecturas y eventos en <code>iaot-p3-lecturas</code> y el actuador en <code>iaot-p3-estado</code></td></tr>
+<tr><td>API Gateway + Lambda</td><td>Sirven los datos al tablero y mandan comandos al devkit por <code>detector1/actuador/cmd</code></td></tr>
+<tr><td>Tablero en S3</td><td>Gráfica, indicadores, clasificación, actuador y CSV</td></tr>
+<tr><td>Terraform</td><td>Crea toda la infraestructura con <code>terraform apply</code></td></tr></table>
+<div class="nota"><b>La nube no decide.</b> La alerta nace en el S3. AWS guarda, muestra y permite comandos; si se cae internet, el detector sigue alertando con el LED y el parlante.</div>
+<h2>Servidor MCP</h2>
+<p>Un servidor MCP en Python (<code>mcp/servidor.py</code>) deja que un asistente de IA como Claude consulte el detector. Pregunta al devkit por HTTP y es de solo lectura, con dos herramientas: <code>eventos_recientes</code> y <code>historial_alertas</code>.</p>
+</div>
+
+<div class="sec2">
+<div class="kick">9 · Visión</div>
+<h1>Cámara de gestos en la ESP32-CAM</h1>
+<p class="lead">El profesor pidió una ESP32-CAM con un modelo de visión entrenado. Se usó para controlar el sistema con la mano: mano abierta prueba el sonido, puño arma o desarma la voz y "nada" no hace nada.</p>
+<div class="nota"><b>Por qué gestos y no drones:</b> la cámara no ve el espectro, y un dron pequeño a decenas de metros ocupa pocos píxeles en 80x60. Para controlar el equipo sin tocarlo, los gestos sí aportan.</div>
+<figure><img src="img/cnn.jpg" style="width:86%;margin:auto"><figcaption>Figura 7. Red convolucional de 4 capas que corre dentro de la ESP32-CAM.</figcaption></figure>
+<div class="grid2">
+<div>
+<h3>Cómo funciona</h3>
+<ul><li>Foto QQVGA 160x120 en gris, promediada a <b>80x60</b>.</li><li>4 convoluciones 3x3 (8, 16, 32 y 48 canales) con ReLU y max pool, promedio global y capa densa a 3 clases.</li><li><b>19 907 parámetros</b> (unos 80 KB), 4,1 millones de multiplicaciones por foto, <b>346 ms</b> por foto (unas 2,8 fotos por segundo).</li><li>Regla de disparo: 5 de las últimas 6 fotos con el mismo gesto y confianza de 0,80 o más; luego espera 2,5 s y que vuelva "nada".</li></ul>
+</div>
+<div>
+<h3>Cómo se entrenó</h3>
+<ul><li>Dataset público <b>HaGRID</b> (muestra de 30 mil imágenes, licencia CC BY-SA 4.0), recortado a 80x60 en gris. "Nada" son recortes sin mano.</li><li>PyTorch con BatchNorm; al exportar se funde en cada convolución.</li><li>Validación con <b>1146 fotos</b> de personas que no estaban en el entrenamiento: 84,6 %.</li><li>C++ y PyTorch dan lo mismo: diferencia máxima de 6 x 10<sup>-8</sup>.</li></ul>
+</div></div>
+<figure><img src="img/gestos_evol.svg" style="width:80%;margin:auto"><figcaption>Figura 8. Exactitud de cada variante con las mismas personas de validación. La de 5 capas no cabe en los 190 KB de memoria para el modelo.</figcaption></figure>
+<div class="grid2">
+<figure><img src="img/gesto.jpg"><figcaption>Figura 9. La cámara reconoce la mano abierta y el devkit responde "ok".</figcaption></figure>
+<div>
+<h3>Recall por clase</h3>
+<table><tr><th>Clase</th><th>Recall</th></tr><tr><td>Nada</td><td>79,9 %</td></tr><tr><td>Mano abierta</td><td>94,0 %</td></tr><tr><td>Puño</td><td>80,3 %</td></tr></table>
+<h3>Todo por WiFi</h3>
+<p>La placa se programó una sola vez usando el devkit como adaptador USB. Después el programa se actualiza por OTA y el modelo se sube desde la página de la cámara; el archivo trae una suma FNV-1a. Tiene modo seguro tras 3 reinicios rápidos y red propia CAMARA-RF.</p>
+</div></div>
+</div>
+
+<div class="sec2">
+<div class="kick">10 · Cobertura</div>
+<h1>Qué cubre del curso</h1>
+<table><tr><th style="width:28%">Tema o criterio</th><th>Dónde se cubre</th><th style="width:22%">Evidencia</th></tr>
+<tr><td>Objeto inteligente conectado que transmite en tiempo real</td><td>S3 → cable → devkit → WiFi; cada ventana de 2 s</td><td>Práctica 1, app en vivo</td></tr>
+<tr><td>Servidor web local que recibe, procesa y guarda (CSV y base de datos)</td><td>FastAPI en Ubuntu (WSL) con PostgreSQL y CSV, página en vivo</td><td><code>practica-1/</code></td></tr>
+<tr><td>Servidor en la nube con base en subred privada</td><td>Azure: VM pública con la app, base en subred privada, grupos de seguridad</td><td>Práctica 1, sustentada el 30 oct</td></tr>
+<tr><td>MQTT, series de tiempo, tablero y alertas</td><td>Mosquitto con usuarios y ACL, InfluxDB privado, Grafana con alertas por Telegram</td><td>Práctica 2, sustentada el 31 oct</td></tr>
+<tr><td>Arquitectura serverless</td><td>AWS IoT Core, DynamoDB, Lambda, API Gateway, tablero en S3, con Terraform</td><td>Práctica 3 (5 nov)</td></tr>
+<tr><td>IA en el borde (Edge AI)</td><td>Regresión logística en el S3; CNN en la ESP32-CAM</td><td>Firmware y fichas de modelo</td></tr>
+<tr><td>Datos propios, entrenamiento y validación</td><td>1134 ventanas, validación por bloques, matriz de confusión</td><td><code>detector/</code></td></tr>
+<tr><td>Visión por computador en IoT</td><td>Gestos con CNN en la ESP32-CAM</td><td><code>firmware/camara_gestos</code></td></tr>
+<tr><td>Actualización remota</td><td>OTA y modelo por WiFi en la cámara; modelo por cable al S3 desde el celular</td><td>Firmware</td></tr>
+<tr><td>Integración con IA generativa</td><td>Servidor MCP de solo lectura</td><td><code>mcp/</code></td></tr>
+<tr><td>Repositorio y documentación</td><td>GitHub con README, bitácora de decisiones, diagramas y videos</td><td>github.com/JCMelendezT/IAoT</td></tr></table>
+<p class="small">El profesor autorizó reemplazar el sensor DHT de los enunciados por los datos del detector en las tres prácticas.</p>
+</div>
+
+<div class="sec2">
+<div class="kick">11 · Cronología</div>
+<h1>Cómo avanzó el proyecto</h1>
+<div class="tl">
+<div class="it"><span class="d">17 oct</span> · Se elige el tema: detector de drones por radiofrecuencia.</div>
+<div class="it"><span class="d">19 oct</span> · Arduino IDE para el firmware; primera prueba del nRF24; Azure para la Práctica 1.</div>
+<div class="it"><span class="d">20 oct</span> · El dron se graba con el control en 2,4 GHz; la banda 2423 a 2456 MHz sube de 4 a 9 veces.</div>
+<div class="it"><span class="d">21 oct</span> · Dos placas (nodo y pasarela). Práctica 1 funcionando de punta a punta.</div>
+<div class="it"><span class="d">30-31 oct</span> · Sustentación de las prácticas 1 y 2; se borra la infraestructura de Azure.</div>
+<div class="it"><span class="d">5 nov</span> · Práctica 3 desplegada y probada en AWS.</div>
+<div class="it"><span class="d">10 nov</span> · 1134 ventanas grabadas, modelo en el S3, prueba a 5 y 8 m, sonido ISD1820.</div>
+<div class="it"><span class="d">12 nov</span> · App del celular en el devkit; el modelo deja de usar el WiFi.</div>
+<div class="it"><span class="d">13 nov</span> · Modelo final exportado (97,4 %).</div>
+<div class="it"><span class="d">14 nov</span> · Servidor MCP; decisión de la cámara con gestos.</div>
+<div class="it"><span class="d">19-23 nov</span> · ESP32-CAM programada, red de 4 capas (84,6 %), gestos controlando el devkit.</div>
+<div class="it"><span class="d">27 nov</span> · Videos técnico y comercial.</div>
+</div>
+<h2>12. Límites y siguientes pasos</h2>
+<table><tr><th>Límite</th><th>Siguiente paso</th></tr>
+<tr><td>Datos de un solo día, un solo cuarto y a 1 m</td><td>Grabar varias sesiones en días, lugares y distancias distintas</td></tr>
+<tr><td>Validación por minutos, no por sesiones</td><td>Con varias sesiones, validar dejando sesiones completas fuera</td></tr>
+<tr><td>Solo un dron (DJI Neo 2) con control en 2,4 GHz</td><td>Probar otros modelos; agregar un receptor de 5,8 GHz</td></tr>
+<tr><td>Falsas alarmas por hora no medidas en una noche real</td><td>Grabar noches completas desde la app y medirlas</td></tr>
+<tr><td>Alcance afuera solo estimado</td><td>Curva de detección a 2, 5, 10, 20 y 30 m en cuarto, pasillo y patio</td></tr>
+<tr><td>Gestos validados con fotos públicas</td><td>Reentrenar con fotos de la propia cámara</td></tr>
+<tr><td>Un solo nodo: no localiza</td><td>Malla de nodos que comparan intensidad para estimar la posición</td></tr></table>
+</div>
+
+<div class="sec">
+<div class="kick">13 · Preparación</div>
+<h1>Preguntas posibles y respuestas</h1>
+<p class="small">Al lado de cada bloque está quién responde por defecto en el guion (sección 14).</p>
+<h2><span class="who p2">Integrante 2</span> Modelo y datos</h2>
+<div class="qa"><div class="q">¿Por qué una regresión logística y no una red neuronal?</div><div class="a">Porque con 19 rasgos bien escogidos separa las tres clases con 97,4 %, cabe en 392 bytes, se explica mirando sus pesos y se puede reentrenar en el celular. Una red no mejoraba lo suficiente para justificar el tamaño y la cuantización.</div></div>
+<div class="qa"><div class="q">¿El 97,4 % no está inflado?</div><div class="a">Puede estar algo optimista, y lo decimos. Para reducirlo se separaron bloques de 1 minuto en vez de ventanas al azar, y se probó con el último 30 % de cada grabación. La limitación real es que hubo una sola grabación por clase.</div></div>
+<div class="qa"><div class="q">¿Por qué no separaron por sesión?</div><div class="a">Porque solo había una sesión por clase. Separar por sesión habría dejado una clase entera fuera del entrenamiento. Es el primer punto de los siguientes pasos.</div></div>
+<div class="qa"><div class="q">¿Qué mide exactamente el nRF24?</div><div class="a">Recorre 126 canales de 1 MHz entre 2400 y 2525 MHz y da un nivel de 0 a 8 por canal en cada fila, unas 4 filas por segundo.</div></div>
+<div class="qa"><div class="q">¿Qué son los 19 rasgos?</div><div class="a">14 energías por tramos de 6 MHz más 5 resúmenes: media del espectro, media y máximo en la banda del dron, canales activos y variación entre filas.</div></div>
+<div class="qa"><div class="q">¿Cómo evitan las falsas alarmas?</div><div class="a">Con la regla de dos ventanas seguidas de dron (unos 4 s). En las pruebas hubo 3 ventanas sueltas en 20 minutos sin dron y ninguna alerta.</div></div>
+<div class="qa"><div class="q">¿Por qué quitaron los rasgos del WiFi?</div><div class="a">Porque el modelo aprendió que "poco tráfico es dron". De noche, con la casa quieta, alertaba. Sin esos rasgos, cero falsas alarmas también con la noche simulada.</div></div>
+<div class="qa"><div class="q">¿Cómo saben que la placa hace lo mismo que Python?</div><div class="a">El cálculo de rasgos en C++ se compiló en el PC y se comparó con Python: las 1134 ventanas dan la misma clase. En la cámara, C++ y PyTorch difieren en 6 x 10<sup>-8</sup>.</div></div>
+<div class="qa"><div class="q">¿Por qué no usaron TensorFlow Lite o int8?</div><div class="a">El modelo del detector son 98 números en float; cuantizarlo no ahorra nada útil. La red de gestos cabe en float (80 KB) y se escribió en C++ propio para leer el modelo desde un archivo y cambiarlo por WiFi.</div></div>
+<h2><span class="who p1">Integrante 1</span> Sistema y alcance</h2>
+<div class="qa"><div class="q">¿Es legal?</div><div class="a">Sí: es un receptor. No transmite en la banda que mide ni interfiere. Bloquear o derribar drones sí sería ilegal sin permiso, y el sistema no lo hace.</div></div>
+<div class="qa"><div class="q">¿Qué pasa si el dron usa 5,8 GHz?</div><div class="a">No lo ve. El nRF24 solo cubre 2,4 GHz. Está declarado como límite; la solución es un receptor de 5,8 GHz.</div></div>
+<div class="qa"><div class="q">¿Qué alcance tiene?</div><div class="a">Medido dentro de casa: 5 m con el dron en tierra y motores apagados, y 8 m volando. Afuera se estimaron unos 30 m, sin medición formal.</div></div>
+<div class="qa"><div class="q">¿Cuánto tarda en alertar?</div><div class="a">Lo esperado son unos 4 s (dos ventanas de 2 s). No se ha cronometrado formalmente.</div></div>
+<div class="qa"><div class="q">¿Por qué dos placas?</div><div class="a">El S3 no puede escuchar saltando de canal y estar conectado al router a la vez, y su WiFi ensuciaría la medición.</div></div>
+<div class="qa"><div class="q">¿Qué pasa si se cae internet?</div><div class="a">Sigue alertando: la decisión es local. El devkit abre su red CENTINELA-RF para la app.</div></div>
+<div class="qa"><div class="q">¿El router de la casa no se confunde con el dron?</div><div class="a">El router está en el canal 8, dentro de la banda del dron, y el fondo de entrenamiento ya lo incluye. En otro lugar podría cambiar; por eso se piden datos de varios lugares.</div></div>
+<div class="qa"><div class="q">¿Cuánto cuesta?</div><div class="a">Las placas y módulos cuestan en tiendas en línea, en orden de magnitud, entre 30 y 50 dólares en total, sin contar el dron de prueba. Es una estimación, no una cotización.</div></div>
+<div class="qa"><div class="q">¿Cuánto consume? ¿Funciona con batería?</div><div class="a">No se midió. Es un siguiente paso para pensar en un equipo portátil.</div></div>
+<h2><span class="who p3">Integrante 3</span> Pasarela, nube y app</h2>
+<div class="qa"><div class="q">¿Para qué la nube si decide la placa?</div><div class="a">Para guardar el historial, mostrarlo en un tablero y mandar comandos. Es la Práctica 3; la alerta no depende de ella.</div></div>
+<div class="qa"><div class="q">¿Cómo es la seguridad con AWS?</div><div class="a">MQTT con TLS en el puerto 8883 y certificado del dispositivo; la API del tablero pide clave. Los certificados no están en el repositorio.</div></div>
+<div class="qa"><div class="q">¿Por qué app web y no nativa?</div><div class="a">Una app de iPhone exige Mac, Xcode y cuenta de desarrollador, y Safari no permite Bluetooth desde una página. La web servida por el devkit funciona en cualquier celular.</div></div>
+<div class="qa"><div class="q">¿Cómo se reentrena desde el celular?</div><div class="a">Se graba con etiqueta o se etiqueta un rango ya grabado, la regresión logística se entrena en el navegador (igual que scikit-learn) y el modelo viaja al S3 por cable con un hash.</div></div>
+<div class="qa"><div class="q">¿Qué es el MCP y para qué sirve?</div><div class="a">Un protocolo para que un asistente de IA use herramientas. Nuestro servidor deja que Claude lea los eventos y el historial de alertas del devkit, solo lectura.</div></div>
+<h2><span class="who p4">Integrante 4</span> Cámara de gestos</h2>
+<div class="qa"><div class="q">¿Por qué la cámara no detecta el dron?</div><div class="a">Un dron pequeño a distancia ocupa muy pocos píxeles en 80x60 y la cámara no ve la radio. El valor de la cámara aquí es controlar el sistema sin tocarlo.</div></div>
+<div class="qa"><div class="q">¿Con qué datos entrenaron los gestos?</div><div class="a">Con HaGRID, un dataset público (CC BY-SA 4.0). "Nada" se hizo con recortes sin mano, y la validación usa personas que no estaban en el entrenamiento.</div></div>
+<div class="qa"><div class="q">¿Por qué 84,6 % y no más?</div><div class="a">Por memoria: el modelo debe caber en unos 190 KB. La red de 5 capas daba 88 % pero no cabe. Con fotos de la propia cámara debería mejorar.</div></div>
+<div class="qa"><div class="q">¿Cómo evitan que se active solo?</div><div class="a">5 de 6 fotos con confianza de 0,80 o más, 2,5 s de espera y volver a "nada" antes de otro gesto.</div></div>
+<div class="qa"><div class="q">¿Qué es fundir la BatchNorm?</div><div class="a">La BatchNorm ayuda a entrenar, pero en la placa sería un cálculo extra. Al exportar, sus valores se meten dentro de los pesos y el sesgo de la convolución, y la cámara solo hace convolución, suma y ReLU.</div></div>
+<div class="qa"><div class="q">¿Guardan fotos de las personas?</div><div class="a">No en uso normal: la foto se procesa en la placa y se descarta. Solo se bajan fotos cuando alguien hace una sesión de captura a propósito, y no se suben al repositorio.</div></div>
+<div class="qa"><div class="q">¿Cómo se actualiza la cámara?</div><div class="a">Por OTA desde su página, y el modelo se sube como archivo. Si se reinicia 3 veces rápido entra en modo seguro, y sin WiFi conocido abre la red CAMARA-RF.</div></div>
+</div>
+
+<div class="sec">
+<div class="kick">14 · Sustentación</div>
+<h1>Guion para 4 personas (12 minutos)</h1>
+<p>Cada integrante tiene un bloque. Lo que va en cursiva es lo que se dice, en palabras propias. Hay demo en vivo y un plan B con el video técnico.</p>
+<table><tr><th>Integrante</th><th>Bloque</th><th>Tiempo</th><th>Responde preguntas de</th></tr>
+<tr><td><span class="who p1">1</span></td><td>Problema, alcance y arquitectura</td><td>0:00 - 3:00</td><td>Sistema, legalidad, alcance</td></tr>
+<tr><td><span class="who p2">2</span></td><td>Detector: datos, modelo y resultados</td><td>3:00 - 6:00</td><td>Modelo, validación, métricas</td></tr>
+<tr><td><span class="who p3">3</span></td><td>Devkit, app, nube, MCP y demo de alerta</td><td>6:00 - 8:30</td><td>App, AWS, MCP</td></tr>
+<tr><td><span class="who p4">4</span></td><td>Cámara de gestos, demo y límites</td><td>8:30 - 11:00</td><td>Visión</td></tr>
+<tr><td><span class="who p1">1</span></td><td>Cierre</td><td>11:00 - 12:00</td><td>Reparte las preguntas</td></tr></table>
+
+<div class="esc"><div class="t"><span class="who p1">1</span>Apertura <span>0:00 - 1:00 · Diapositiva: título + vuelo del dron</span></div>
+<div class="dice">"En Colombia los ataques con drones pasaron de 61 en 2024 a 333 en 2025, según Naciones Unidas. Quien está en tierra tiene segundos para saber que hay uno cerca. Nosotros construimos Centinela RF: un detector que escucha la radio del control del dron y avisa en unos 4 segundos, sin internet y sin transmitir nada."</div>
+<div class="hace">Mostrar los primeros 15 s del video técnico mientras habla.</div></div>
+<div class="esc"><div class="t"><span class="who p1">1</span>Alcance y arquitectura <span>1:00 - 3:00 · Diapositivas: alcance (sección 2) y Figura 1</span></div>
+<div class="dice">"Detecta drones cuyo control transmite en 2,4 GHz. No interfiere ni derriba, porque eso es ilegal. Son tres placas: el ESP32-S3 con un nRF24 escucha y decide; el devkit guarda, sirve la app y sube a AWS; y la ESP32-CAM reconoce gestos. Usamos dos placas porque el S3 no puede escuchar y estar conectado al router a la vez."</div>
+<div class="hace">Señalar en la figura los cables 17→16 y 17→18. Transición: "Ahora, cómo sabe que es un dron."</div></div>
+<div class="esc"><div class="t"><span class="who p2">2</span>Cómo detecta <span>3:00 - 4:15 · Figuras 2 y 3</span></div>
+<div class="dice">"El nRF24 recorre 126 canales unas 4 veces por segundo. Miren el espectro real: el control del dron llena la banda de 2423 a 2456 MHz, unas 15 veces más actividad que el fondo. Cada 2 segundos resumimos eso en 19 números y una regresión logística de 392 bytes decide entre fondo, Bluetooth y dron."</div></div>
+<div class="esc"><div class="t"><span class="who p2">2</span>Datos y resultados <span>4:15 - 5:15 · Matriz y Figura 4</span></div>
+<div class="dice">"Grabamos 1134 ventanas. Validamos separando bloques de un minuto: 97,4 % de exactitud, y cuando dice dron acierta el 99,4 %. Con la regla de dos ventanas seguidas no hubo falsas alarmas. Dentro de casa alertó a 5 m con el dron en tierra y a 8 m volando."</div></div>
+<div class="esc"><div class="t"><span class="who p2">2</span>Lo que aprendimos <span>5:15 - 6:00 · Sección 7</span></div>
+<div class="dice">"El primer modelo hacía trampa: aprendió que poco tráfico WiFi era dron, y de noche alertaba. Lo descubrimos mirando los pesos y lo entrenamos solo con el espectro. El número era bueno, pero el modelo estaba mal: hay que mirar qué aprende."</div>
+<div class="hace">Transición: "Y cuando detecta, ¿a quién avisa?"</div></div>
+<div class="esc"><div class="t"><span class="who p3">3</span>Devkit, app y nube <span>6:00 - 7:30 · Figura 6 y tabla de AWS</span></div>
+<div class="dice">"El devkit recibe cada ventana por cable, la guarda en una caja negra de unas 9 horas y sirve esta app en el celular. Desde aquí grabamos con etiqueta y reentrenamos el modelo en el navegador, sin PC, y el modelo viaja al S3 por cable. Además sube cada lectura a AWS IoT Core por MQTT con TLS, y un servidor MCP deja que un asistente de IA consulte el historial. Pero la decisión nunca sale de la placa."</div></div>
+<div class="esc"><div class="t"><span class="who p3">3</span>Demo en vivo: alerta <span>7:30 - 8:30</span></div>
+<div class="dice">"Vamos a encender el control del dron." (Esperar.) "Ahí está: posible dron… alerta. Suena el parlante y la app se pone roja."</div>
+<div class="hace">Antes de empezar: control en 2,4 GHz en DJI Fly, app abierta y proyectada, parlante con volumen. Plan B: video técnico desde el minuto 1:15.</div></div>
+<div class="esc"><div class="t"><span class="who p4">4</span>Cámara de gestos <span>8:30 - 9:45 · Figuras 7 y 8</span></div>
+<div class="dice">"El profesor pidió un modelo de visión. La cámara no ve la radio, así que la usamos para controlar el sistema sin tocarlo. Corre una red convolucional de cuatro capas con unos 20 mil parámetros, sobre fotos de 80 por 60 en gris, en 346 milisegundos. Pasamos de 52 % a 84,6 % arreglando la clase nada y haciendo la red más profunda, pero que siguiera cabiendo en la memoria."</div></div>
+<div class="esc"><div class="t"><span class="who p4">4</span>Demo en vivo: gesto <span>9:45 - 10:30</span></div>
+<div class="dice">"Mano abierta…" (2 segundos quieta) "…y el devkit prueba el sonido. Puño, y se desarma la voz."</div>
+<div class="hace">Buena luz y fondo simple, a 1 m de la cámara. Plan B: video técnico desde el minuto 2:04.</div></div>
+<div class="esc"><div class="t"><span class="who p4">4</span>Límites <span>10:30 - 11:00 · Sección 12</span></div>
+<div class="dice">"Somos honestos con los límites: datos de un solo día y a un metro, un solo dron, solo 2,4 GHz, y las falsas alarmas de una noche real todavía no se midieron. Eso es lo siguiente."</div></div>
+<div class="esc"><div class="t"><span class="who p1">1</span>Cierre <span>11:00 - 12:00</span></div>
+<div class="dice">"Centinela RF demuestra que con piezas de menos de 50 dólares se puede detectar un dron decidiendo en el borde, en segundos y sin nube. Todo está en el repositorio, con la bitácora de cada decisión. Gracias, quedamos atentos a sus preguntas."</div>
+<div class="hace">Repartir las preguntas según la tabla de arriba.</div></div>
+
+<h2>Lista antes de entrar</h2>
+<ul class="chk"><li>S3, devkit y cámara encendidos y en el mismo WiFi; app abierta en <code>detector.local</code>.</li><li>Control del dron en 2,4 GHz y con batería.</li><li>Parlante del ISD1820 con la alerta grabada.</li><li>Video técnico descargado en el computador, por si falla algo.</li><li>Cada integrante leyó sus preguntas de la sección 13.</li></ul>
+</div>
+
+<div class="sec">
+<div class="kick">15 · Glosario</div>
+<h1>Glosario rápido</h1>
+<table><tr><th style="width:26%">Término</th><th>Qué es</th></tr>
+<tr><td>Edge AI (IA en el borde)</td><td>El modelo corre en el dispositivo y no en la nube</td></tr>
+<tr><td>nRF24L01+</td><td>Radio de 2,4 GHz usada aquí solo como receptor que mide la energía de cada canal</td></tr>
+<tr><td>Ventana</td><td>2 segundos de datos que se resumen en un vector de rasgos</td></tr>
+<tr><td>Rasgo</td><td>Número que describe la ventana, por ejemplo la energía en un tramo de frecuencia</td></tr>
+<tr><td>Regresión logística</td><td>Modelo lineal que da la probabilidad de cada clase; pequeño y explicable</td></tr>
+<tr><td>Precisión / recall / F1</td><td>Precisión: de lo que dijo dron, cuánto lo era. Recall: de los drones, cuántos encontró. F1: promedio de ambos</td></tr>
+<tr><td>Validación por bloques</td><td>Separar minutos completos para que ventanas vecinas no queden en entrenamiento y prueba a la vez</td></tr>
+<tr><td>CNN</td><td>Red neuronal convolucional; aprende filtros sobre la imagen</td></tr>
+<tr><td>BatchNorm fundida</td><td>La normalización se mete en los pesos al exportar para no calcularla en la placa</td></tr>
+<tr><td>OTA</td><td>Actualizar el programa por WiFi</td></tr>
+<tr><td>MQTT / TLS</td><td>Protocolo liviano de mensajes para IoT / cifrado de la conexión</td></tr>
+<tr><td>MCP</td><td>Model Context Protocol: forma estándar de dar herramientas a un asistente de IA</td></tr>
+<tr><td>Caja negra</td><td>Memoria del devkit que guarda cada ventana para revisar y reentrenar</td></tr></table>
+<h2>Fuentes de las cifras de contexto</h2>
+<ul class="small"><li>UNMAS, citado por El País (17 de abril de 2026): elpais.com.co/judicial/onu-asegura-que-ataques-con-drones-y-explosivos-se-han-disparado-en-colombia-1722.html</li><li>Defensoría del Pueblo, citado por Al Jazeera / AFP (18 de septiembre de 2026): aljazeera.com/news/2026/9/18/drone-attacks-by-colombian-armed-groups-more-than-double-in-early-2026</li><li>Las cifras del proyecto salen del repositorio: <code>detector/modelos/ficha_modelo.md</code>, <code>docs/decisiones.md</code>, <code>detector/gestos/modelo/ficha_gestos.md</code> y <code>detector/resultados/deteccion_distancia_dron.xlsx</code>.</li></ul>
+</div>
+</body></html>

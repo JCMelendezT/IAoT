@@ -1,0 +1,268 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;background:#04070d;overflow:hidden}
+  #wrap{position:relative;width:1920px;height:1080px}
+  canvas{display:block}
+  #ui{position:absolute;inset:0;pointer-events:none;font-family:'Montserrat',sans-serif;color:#fff}
+  .lab{position:absolute;transform:translate(-50%,-100%);text-align:center;opacity:0;white-space:nowrap}
+  .lab b{display:block;font-weight:800;font-size:40px;letter-spacing:.5px;text-shadow:0 2px 18px rgba(0,0,0,.9)}
+  .lab i{display:block;font-style:normal;font-weight:600;font-size:30px;color:#5fd4ff;margin-top:4px;text-shadow:0 2px 14px rgba(0,0,0,.9)}
+  .lab:after{content:"";display:block;width:3px;height:70px;margin:10px auto 0;background:linear-gradient(#5fd4ff,rgba(95,212,255,0))}
+  #titulo{position:absolute;left:0;right:0;top:120px;text-align:center;opacity:0}
+  #titulo h1{margin:0;font-weight:900;font-size:118px;letter-spacing:10px;text-shadow:0 0 40px rgba(95,212,255,.55)}
+  #titulo p{margin:18px 0 0;font-weight:600;font-size:42px;color:#9fe3ff;letter-spacing:2px}
+  #chips{position:absolute;left:0;right:0;bottom:250px;display:flex;flex-direction:column;align-items:center;gap:26px}
+  .chip{opacity:0;background:rgba(8,20,34,.82);border:2px solid rgba(95,212,255,.6);border-radius:28px;padding:24px 44px;
+        font-weight:800;font-size:50px;box-shadow:0 0 40px rgba(95,212,255,.25)}
+  .chip span{color:#5fd4ff}
+</style></head>
+<body><div id="wrap"><div id="ui">
+  <div id="titulo"><h1>CENTINELA RF</h1><p>Detección pasiva de drones · IA en el borde</p></div>
+  <div class="lab" id="l0"><b>ESP32-S3 + nRF24L01+</b><i>escucha 126 canales · decide</i></div>
+  <div class="lab" id="l1"><b>ESP32 devkit (WROOM-32)</b><i>pasarela · app · AWS</i></div>
+  <div class="lab" id="l2"><b>ESP32-CAM AI-Thinker</b><i>CNN de gestos</i></div>
+  <div id="chips">
+    <div class="chip" id="c0"><span>97</span> de cada 100 aciertos</div>
+    <div class="chip" id="c1">Funciona <span>sin internet</span></div>
+    <div class="chip" id="c2">No emite nada: <span>solo escucha</span></div>
+  </div>
+</div></div>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const W = 1920, H = 1080;
+const ESCENA = new URLSearchParams(location.search).get('e') || 'tec3d';
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.getElementById('wrap').prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const FONDO = 0x04070d;
+scene.background = new THREE.Color(FONDO);
+scene.fog = new THREE.FogExp2(FONDO, 0.022);
+const pm = new THREE.PMREMGenerator(renderer);
+scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(36, W / H, 0.1, 400);
+
+scene.add(new THREE.HemisphereLight(0x9fd8ff, 0x0a0f18, 0.6));
+const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(8, 18, 10); scene.add(key);
+const rim = new THREE.DirectionalLight(0x3fb8ff, 2.5); rim.position.set(-12, 6, -14); scene.add(rim);
+const fill = new THREE.PointLight(0x5fd4ff, 40, 40); fill.position.set(0, 4, 8); scene.add(fill);
+
+// piso: cuadricula azul
+const grid = new THREE.GridHelper(240, 120, 0x2aa6ff, 0x123a5c);
+grid.material.transparent = true; grid.material.opacity = 0.55; grid.position.y = -0.02; scene.add(grid);
+const grid2 = new THREE.GridHelper(240, 24, 0x3fc0ff, 0x3fc0ff);
+grid2.material.transparent = true; grid2.material.opacity = 0.35; grid2.position.y = -0.01; scene.add(grid2);
+const halo = new THREE.Mesh(new THREE.CircleGeometry(16, 64),
+  new THREE.MeshBasicMaterial({ color: 0x1a6fb0, transparent: true, opacity: 0.18 }));
+halo.rotation.x = -Math.PI / 2; halo.position.y = 0.0; scene.add(halo);
+
+// ---------- materiales ----------
+const M = {
+  pcb: new THREE.MeshStandardMaterial({ color: 0x15171c, roughness: 0.55, metalness: 0.1 }),
+  pcbAzul: new THREE.MeshStandardMaterial({ color: 0x0f1d33, roughness: 0.5, metalness: 0.1 }),
+  plata: new THREE.MeshStandardMaterial({ color: 0xd9dde3, roughness: 0.28, metalness: 1.0 }),
+  plataMate: new THREE.MeshStandardMaterial({ color: 0x8d9198, roughness: 0.45, metalness: 0.9 }),
+  oro: new THREE.MeshStandardMaterial({ color: 0xf2c14e, roughness: 0.3, metalness: 1.0 }),
+  negro: new THREE.MeshStandardMaterial({ color: 0x0b0b0d, roughness: 0.6 }),
+  plastico: new THREE.MeshStandardMaterial({ color: 0x1b1b1e, roughness: 0.7 }),
+  amarillo: new THREE.MeshStandardMaterial({ color: 0xe8d23a, roughness: 0.5 }),
+  blanco: new THREE.MeshStandardMaterial({ color: 0xf4f4f0, roughness: 0.35, emissive: 0x777766, emissiveIntensity: 0.4 }),
+  naranja: new THREE.MeshStandardMaterial({ color: 0xd9861f, roughness: 0.45, metalness: 0.2 }),
+  beige: new THREE.MeshStandardMaterial({ color: 0xd8cfb8, roughness: 0.6 }),
+  vidrio: new THREE.MeshStandardMaterial({ color: 0x05070c, roughness: 0.05, metalness: 0.6 }),
+  smd: new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.5 }),
+  cobre: new THREE.MeshStandardMaterial({ color: 0x9a6b3c, roughness: 0.4, metalness: 0.8 }),
+};
+function texto(t, w = 512, h = 256, size = 70, color = '#3b3f46', bg = null) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); }
+  g.fillStyle = color; g.font = `800 ${size}px Montserrat, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  t.split('\n').forEach((l, i, a) => g.fillText(l, w / 2, h / 2 + (i - (a.length - 1) / 2) * size * 1.15));
+  const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 8; return tx;
+}
+function caja(w, h, d, mat) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); }
+
+// Cada pieza: malla, posicion armada y desplazamiento al explotar
+function pieza(grupo, malla, pos, dy, extra = [0, 0, 0]) {
+  malla.position.set(...pos);
+  malla.userData = { p0: new THREE.Vector3(...pos), off: new THREE.Vector3(extra[0], dy, extra[2]) };
+  grupo.add(malla); grupo.userData.piezas.push(malla); return malla;
+}
+function nuevaPlaca() { const g = new THREE.Group(); g.userData.piezas = []; return g; }
+
+function pines(n, largoAbajo = 0.75) {
+  const g = new THREE.Group();
+  const paso = 0.254, L = n * paso;
+  g.add(caja(L, 0.25, 0.25, M.plastico));
+  const geo = new THREE.BoxGeometry(0.064, largoAbajo + 0.35, 0.064);
+  const inst = new THREE.InstancedMesh(geo, M.oro, n);
+  const m = new THREE.Matrix4();
+  for (let i = 0; i < n; i++) { m.makeTranslation(-L / 2 + paso / 2 + i * paso, -largoAbajo / 2 + 0.05, 0); inst.setMatrixAt(i, m); }
+  g.add(inst);
+  return g;
+}
+function pinesAmarillos(n) { // tira amarilla del S3
+  const g = pines(n, 0.9); g.children[0].material = M.amarillo; return g;
+}
+function modulo(w, d, etiqueta) {
+  const g = new THREE.Group();
+  g.add(caja(w, 0.08, d, M.pcbAzul));
+  const sh = caja(w * 0.86, 0.32, d * 0.68, M.plata); sh.position.set(0, 0.2, d * 0.13); g.add(sh);
+  const tp = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.8, d * 0.6),
+    new THREE.MeshStandardMaterial({ map: texto(etiqueta, 512, 512, 64, '#6a6f78'), transparent: true, roughness: 0.3, metalness: 0.8 }));
+  tp.rotation.x = -Math.PI / 2; tp.position.set(0, 0.362, d * 0.13); g.add(tp);
+  return g;
+}
+function smd(g, n, area, semilla) {
+  let s = semilla;
+  const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  for (let i = 0; i < n; i++) {
+    const w = 0.08 + r() * 0.25, d = 0.06 + r() * 0.18;
+    const c = caja(w, 0.06 + r() * 0.08, d, r() > 0.75 ? M.cobre : M.smd);
+    c.position.set(area[0] + r() * (area[1] - area[0]), 0.12, area[2] + r() * (area[3] - area[2]));
+    g.add(c);
+  }
+}
+
+// ---------- ESP32-S3 DevKitC + nRF24 ----------
+function placaS3() {
+  const g = nuevaPlaca();
+  const base = new THREE.Group(); base.add(caja(6.3, 0.16, 2.55, M.pcb)); smd(base, 26, [-2.8, 1.0, -0.9, 0.9], 7);
+  pieza(g, base, [0, 0, 0], 0);
+  pieza(g, modulo(1.8, 2.55, 'ESP32-S3\nWROOM'), [2.0, 0.12, 0], 1.6);
+  const ant = caja(0.75, 0.04, 2.3, M.pcbAzul); pieza(g, ant, [3.1, 0.1, 0], 1.6);
+  for (const z of [-0.55, 0.55]) pieza(g, caja(0.75, 0.33, 0.9, M.plata), [-2.85, 0.25, z], 1.1, [-0.6, 0, 0]);
+  const led = caja(0.3, 0.12, 0.3, M.blanco); pieza(g, led, [-1.6, 0.14, 0], 0.9);
+  for (const x of [0.4, 0.95]) { const b = new THREE.Group(); b.add(caja(0.35, 0.14, 0.35, M.plataMate)); const k = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16), M.negro); k.position.y = 0.11; b.add(k); pieza(g, b, [x - 1.3, 0.16, 0.75], 1.0); }
+  const h1 = pinesAmarillos(22); pieza(g, h1, [-0.1, -0.18, 1.1], -1.4);
+  const h2 = pinesAmarillos(22); pieza(g, h2, [-0.1, -0.18, -1.1], -1.4);
+  // nRF24 con antena, encima
+  const rf = new THREE.Group();
+  rf.add(caja(2.9, 0.12, 1.5, M.pcb));
+  const chip = caja(0.5, 0.1, 0.5, M.smd); chip.position.set(-0.2, 0.1, 0); rf.add(chip);
+  const sma = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.7, 20), M.oro); sma.rotation.z = Math.PI / 2; sma.position.set(1.7, 0.2, 0); rf.add(sma);
+  const antena = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 6.5, 20), M.negro); antena.position.set(2.1, 3.3, 0); rf.add(antena);
+  const hp = pines(8, 0.4); hp.rotation.y = Math.PI / 2; hp.position.set(-1.3, -0.15, 0); rf.add(hp);
+  pieza(g, rf, [-1.0, 1.1, -0.2], 3.4, [-1.2, 0, 0]);
+  return g;
+}
+
+// ---------- ESP32 devkit clasico ----------
+function placaDevkit() {
+  const g = nuevaPlaca();
+  const base = new THREE.Group(); base.add(caja(5.1, 0.16, 2.8, M.pcb)); smd(base, 22, [-2.3, 0.6, -1.0, 1.0], 13);
+  pieza(g, base, [0, 0, 0], 0);
+  pieza(g, modulo(1.8, 2.55, 'ESP32\nWROOM-32'), [1.4, 0.12, 0], 1.6);
+  pieza(g, caja(0.9, 0.3, 0.75, M.plata), [-2.35, 0.22, 0], 1.1, [-0.6, 0, 0]);
+  const reg = caja(0.6, 0.22, 0.5, M.smd); pieza(g, reg, [-1.2, 0.18, -0.6], 0.8);
+  const chipUsb = caja(0.55, 0.12, 0.55, M.smd); pieza(g, chipUsb, [-1.1, 0.14, 0.45], 0.8);
+  for (const z of [-0.95, 0.95]) { const b = new THREE.Group(); b.add(caja(0.42, 0.14, 0.32, M.plataMate)); const k = caja(0.18, 0.12, 0.12, M.negro); k.position.y = 0.12; b.add(k); pieza(g, b, [-2.1, 0.16, z], 1.0); }
+  pieza(g, pines(19), [0.05, -0.18, 1.27], -1.4);
+  pieza(g, pines(19), [0.05, -0.18, -1.27], -1.4);
+  return g;
+}
+
+// ---------- ESP32-CAM ----------
+function placaCam() {
+  const g = nuevaPlaca();
+  const base = new THREE.Group(); base.add(caja(2.7, 0.16, 4.0, M.pcb)); smd(base, 14, [-1.1, 1.1, 0.6, 1.7], 21);
+  const rot = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.5), new THREE.MeshBasicMaterial({ map: texto('ESP32-CAM', 512, 128, 80, '#e9e9e9'), transparent: true }));
+  rot.rotation.x = -Math.PI / 2; rot.position.set(0.1, 0.085, 1.55); base.add(rot);
+  pieza(g, base, [0, 0, 0], 0);
+  pieza(g, caja(1.5, 0.2, 1.55, M.plataMate), [-0.35, 0.18, -1.0], 1.0);
+  const flex = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 1.0), M.naranja); flex.rotation.x = -Math.PI / 2; pieza(g, flex, [0.05, 0.31, -0.25], 1.7);
+  const camg = new THREE.Group();
+  camg.add(caja(0.85, 0.45, 0.85, M.negro));
+  const lente = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.33, 0.35, 32), M.negro); lente.position.y = 0.38; camg.add(lente);
+  const vid = new THREE.Mesh(new THREE.CircleGeometry(0.2, 32), M.vidrio); vid.rotation.x = -Math.PI / 2; vid.position.y = 0.56; camg.add(vid);
+  pieza(g, camg, [0.05, 0.55, -1.05], 2.6);
+  pieza(g, caja(1.9, 0.25, 0.45, M.beige), [0.05, 0.2, 0.35], 1.2);
+  pieza(g, caja(0.35, 0.18, 0.35, M.blanco), [1.05, 0.17, 0.35], 1.1);
+  pieza(g, pines(8), [0, -0.18, 1.85], -1.4).rotation.y = 0;
+  const p2 = pines(8); p2.rotation.y = Math.PI / 2; pieza(g, p2, [-1.2, -0.18, 0.3], -1.4);
+  const p3 = pines(8); p3.rotation.y = Math.PI / 2; pieza(g, p3, [1.2, -0.18, 0.3], -1.4);
+  return g;
+}
+
+const placas = [placaS3(), placaDevkit(), placaCam()];
+// posiciones armadas: en columna hacia el fondo para que entren en pantalla vertical
+const P_ARMADO = [new THREE.Vector3(-8.5, 0.9, 0), new THREE.Vector3(0, 0.9, 1.0), new THREE.Vector3(7.5, 0.9, 0)];
+const YAW_ARMADO = [0.15, -0.25, 0.35];
+const P_EXPL = [new THREE.Vector3(-9, 4.5, -1), new THREE.Vector3(0, 5.5, 1.5), new THREE.Vector3(8.5, 4, -1)];
+placas.forEach(p => scene.add(p));
+const anclas = [new THREE.Vector3(0, 2.6, 0), new THREE.Vector3(0, 1.2, 0), new THREE.Vector3(0, 1.6, 0)];
+
+// lineas de luz entre placas (S3 -> devkit, camara -> devkit)
+function linea() {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1, 10, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0x5fd4ff, transparent: true, opacity: 0.9 }));
+  const pulso = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), new THREE.MeshBasicMaterial({ color: 0xbff0ff }));
+  scene.add(m); scene.add(pulso); return { m, pulso };
+}
+const lineas = [linea(), linea()];
+function ponerLinea(L, a, b, prog, fase) {
+  const fin = a.clone().lerp(b, prog);
+  const mid = a.clone().add(fin).multiplyScalar(0.5);
+  const len = a.distanceTo(fin);
+  L.m.visible = prog > 0.01; L.pulso.visible = prog > 0.99;
+  L.m.position.copy(mid); L.m.scale.set(1, Math.max(len, 0.001), 1);
+  L.m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+  L.pulso.position.copy(a.clone().lerp(b, fase % 1));
+}
+
+const ease = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ramp = (t, a, b) => clamp((t - a) / (b - a));
+
+function setLab(i, op, wpos) {
+  const el = document.getElementById('l' + i);
+  const v = wpos.clone().project(camera);
+  el.style.left = ((v.x + 1) / 2 * W) + 'px';
+  el.style.top = ((1 - v.y) / 2 * H) + 'px';
+  el.style.opacity = op;
+}
+
+window.render = function (t) {
+  let explo, giro, labsOp, lineProg, tituloOp, chips = [0, 0, 0], camAng, camAlt, camDist;
+  if (ESCENA === 'tec3d') {
+    const k = ease(ramp(t, 0.3, 5.0));
+    explo = 1 - k; giro = (1 - k) * 1.2;
+    labsOp = ramp(t, 5.3, 5.9);
+    lineProg = ease(ramp(t, 5.0, 6.0));
+    tituloOp = 0;
+    camAng = -0.12 + t * 0.02; camAlt = 11 - k * 2.5; camDist = 25 - k * 4;
+  } else {
+    explo = 0.12 + 0.12 * Math.sin(t * 1.1); giro = 0;
+    labsOp = 0; lineProg = 1; tituloOp = ramp(t, 1.5, 2.3);
+    camAng = -0.3 + t * 0.07; camAlt = 12; camDist = 25;
+  }
+  placas.forEach((p, i) => {
+    p.position.copy(P_ARMADO[i]).lerp(P_EXPL[i], explo);
+    p.rotation.set(explo * 0.5 * (i - 1), YAW_ARMADO[i] + giro * (i % 2 ? -1 : 1) + (ESCENA === 'fin' ? t * 0.08 : 0), explo * 0.35);
+    p.userData.piezas.forEach(m => { m.position.copy(m.userData.p0).addScaledVector(m.userData.off, explo); });
+  });
+  camera.position.set(Math.sin(camAng) * camDist, camAlt, Math.cos(camAng) * camDist);
+  if (ESCENA === 'fin') camera.lookAt(0, 4.6, 0); else camera.lookAt(-0.3, 3.4, 0);
+  camera.updateMatrixWorld();
+  const pw = placas.map(p => p.position.clone());
+  ponerLinea(lineas[0], pw[0].clone().add(new THREE.Vector3(0, 0.3, 0)), pw[1].clone().add(new THREE.Vector3(0, 0.3, 0)), lineProg, t * 0.7);
+  ponerLinea(lineas[1], pw[2].clone().add(new THREE.Vector3(0, 0.3, 0)), pw[1].clone().add(new THREE.Vector3(0, 0.3, 0)), lineProg, t * 0.7 + 0.5);
+  placas.forEach((p, i) => setLab(i, labsOp, p.position.clone().add(anclas[i])));
+  document.getElementById('titulo').style.opacity = tituloOp;
+  document.getElementById('titulo').style.transform = `translateY(${(1 - tituloOp) * 30}px)`;
+  chips.forEach((c, i) => { const el = document.getElementById('c' + i); el.style.opacity = c; el.style.transform = `translateY(${(1 - c) * 40}px) scale(${0.92 + 0.08 * c})`; });
+  
+  renderer.render(scene, camera);
+  return true;
+};
+document.fonts.ready.then(() => { window.listo = true; });
+</script></body></html>

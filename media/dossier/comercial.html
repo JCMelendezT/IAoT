@@ -1,0 +1,208 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Centinela RF - Dossier para inversionistas</title><link rel="stylesheet" href="estilo.css">
+<style>
+.big3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5mm;margin:4mm 0 6mm}
+.paso{background:#0b2540;color:#fff;border-radius:4mm;padding:6mm 5mm;text-align:center;page-break-inside:avoid}
+.paso .n{font-family:Montserrat;font-weight:900;font-size:30pt;color:#7fdcff;line-height:1}
+.paso b{display:block;font-family:Montserrat;font-size:14pt;margin:2mm 0}
+.paso span{font-size:9.6pt;color:#cfe3f1}
+.road{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:4mm 0 6mm;page-break-inside:avoid}
+.road .f{padding:4mm 4mm 4mm 6mm;position:relative;background:#eef6fb;border-right:3px solid #fff}
+.road .f:first-child{background:#0e8fc4;color:#fff}
+.road .f b{font-family:Montserrat;display:block;font-size:10.5pt;margin-bottom:1.5mm}
+.road .f i{font-style:normal;font-size:8.8pt;display:block;line-height:1.4}
+.road .f .e{font-family:Montserrat;font-weight:800;font-size:8pt;letter-spacing:1.5px;opacity:.75;margin-bottom:1mm;display:block}
+.yes{color:#1f9d55;font-weight:800}.no{color:#e23b4e;font-weight:800}.mid{color:#e08a00;font-weight:800}
+.pitch{font-size:16pt;font-family:Montserrat;font-weight:800;color:#0b2540;line-height:1.3;margin:2mm 0 5mm}
+</style></head><body>
+
+<div class="cover"><img src="img/ventana.jpg"><div class="in">
+<div class="k">DOSSIER PARA INVERSIONISTAS · UAO 2026-2</div>
+<h1>CENTINELA RF</h1>
+<div class="s">Un detector de drones pequeño y barato que escucha el aire y avisa en segundos. Sin cámaras apuntando afuera, sin internet y sin emitir nada.</div>
+<div class="m">Qué problema resuelve, qué ya funciona, a quién se le puede vender, qué falta, preguntas que nos pueden hacer y guion del pitch para 4 personas<br>Versión del 27 de noviembre de 2026</div>
+</div></div>
+
+<div>
+<div class="kick">Resumen</div>
+<h1>Centinela RF en una página</h1>
+<p class="pitch">Hoy cualquiera puede comprar un dron y acercarlo a una base militar, una cárcel, una finca o tu ventana. Centinela RF lo detecta por su señal de radio y te avisa antes de que lo veas.</p>
+<div class="grid2">
+<div class="card r"><div class="num">x5,5</div><div class="lbl">Crecieron en un año los ataques con drones con explosivos en Colombia: de 61 en 2024 a 333 en 2025 (UNMAS)</div></div>
+<div class="card"><div class="num">97 de 100</div><div class="lbl">Aciertos del prototipo en las pruebas, con cero falsas alarmas en las grabaciones</div></div>
+<div class="card a"><div class="num">~4 s</div><div class="lbl">Tiempo esperado hasta la alerta, decidido dentro del equipo</div></div>
+<div class="card g"><div class="num">&lt; 50 USD</div><div class="lbl">Costo aproximado de las piezas del prototipo (estimación)</div></div>
+</div>
+<table><tr><th style="width:24%">Pregunta</th><th>Respuesta corta</th></tr>
+<tr><td>¿Qué es?</td><td>Un equipo del tamaño de una caja de celular que reconoce la señal de radio del control de un dron</td></tr>
+<tr><td>¿Qué lo hace distinto?</td><td>Es pasivo (solo escucha), piensa sin internet y cuesta una fracción de los sistemas profesionales</td></tr>
+<tr><td>¿Qué ya funciona?</td><td>Prototipo completo: detecta, suena, muestra la alerta en el celular, guarda el historial y se controla con gestos</td></tr>
+<tr><td>¿Qué falta?</td><td>Pruebas en campo abierto, más modelos de dron, la banda de 5,8 GHz y una carcasa de producto</td></tr>
+<tr><td>¿Qué buscamos?</td><td>Apoyo para pasar del prototipo a un piloto en campo (monto a definir por el equipo)</td></tr></table>
+</div>
+
+<div class="sec">
+<div class="kick">El problema</div>
+<h1>Los drones se volvieron una amenaza barata</h1>
+<figure><img src="img/ataques.svg" style="width:82%;margin:auto"></figure>
+<p>La Defensoría del Pueblo reportó que entre enero y mayo de 2026 los ataques con drones subieron <b>146 %</b> frente al mismo periodo de 2025, con <b>21 muertos y 145 heridos</b>. Casi un tercio de las víctimas fueron civiles.</p>
+<p>No es solo un tema militar. Un dron puede espiar una casa, meter objetos a una cárcel, sobrevolar una finca o una planta eléctrica, o acercarse a un evento lleno de gente. En casi todos los casos el problema es el mismo: <b>nadie se entera a tiempo</b>.</p>
+<div class="nota"><b>Por qué cuesta detectarlos:</b> son pequeños, vuelan bajo y hacen poco ruido. Una cámara necesita verlos y un radar es caro. Pero casi todos tienen algo que no pueden esconder: el control les habla por radio todo el tiempo.</div>
+</div>
+
+<div class="sec2">
+<div class="kick">La solución</div>
+<h1>Escucha, piensa y avisa</h1>
+<div class="big3">
+<div class="paso"><div class="n">1</div><b>Escucha</b><span>Una antena revisa la frecuencia de 2,4 GHz, la misma que usan los controles de dron, unas 4 veces por segundo</span></div>
+<div class="paso"><div class="n">2</div><b>Piensa</b><span>Un pequeño modelo de inteligencia artificial, dentro del equipo, distingue un dron del WiFi y del Bluetooth de la casa</span></div>
+<div class="paso"><div class="n">3</div><b>Avisa</b><span>Suena una alarma, el celular muestra "ALERTA: DRON" y queda guardado en el historial y en la nube</span></div>
+</div>
+<div class="grid2">
+<figure><img src="img/montaje.jpg" style="height:92mm;object-fit:cover"><figcaption>El prototipo real: tres placas, una antena y un parlante.</figcaption></figure>
+<figure><img src="img/app_alerta.jpg" style="height:92mm;object-fit:contain;background:#0b0f15"><figcaption>La alerta en el celular, en vivo.</figcaption></figure>
+</div>
+<h2>Además: se controla con la mano</h2>
+<p>Una cámara pequeña reconoce gestos: <b>mano abierta</b> prueba la alarma y <b>puño</b> la activa o desactiva. Sirve para manejar el equipo sin tocarlo. La foto se procesa ahí mismo y no se guarda.</p>
+</div>
+
+<div class="sec2">
+<div class="kick">Lo que ya funciona</div>
+<h1>Un prototipo probado, con cifras honestas</h1>
+<div class="grid3">
+<div class="card"><div class="num">97,4 %</div><div class="lbl">Aciertos al reconocer dron, Bluetooth o ambiente normal</div></div>
+<div class="card g"><div class="num">0</div><div class="lbl">Falsas alarmas en las grabaciones de prueba</div></div>
+<div class="card a"><div class="num">8 m</div><div class="lbl">Detectó un dron volando dentro de una casa, con paredes de por medio</div></div>
+</div>
+<table><tr><th>Ya funciona</th><th>Todavía no está probado</th></tr>
+<tr><td>Detección del control de un dron DJI en 2,4 GHz</td><td>Otros modelos y marcas de dron</td></tr>
+<tr><td>Alarma con sonido y alerta en el celular</td><td>Alcance medido en campo abierto (estimamos unos 30 m)</td></tr>
+<tr><td>Historial de unas 9 horas y envío a la nube (AWS)</td><td>Drones en 5,8 GHz o manejados solo con celular</td></tr>
+<tr><td>Funciona sin internet</td><td>Falsas alarmas durante noches completas en lugares reales</td></tr>
+<tr><td>Se actualiza y se reentrena desde el celular</td><td>Consumo de batería y equipo portátil</td></tr>
+<tr><td>Control por gestos con la cámara</td><td>Ubicar dónde está el dron (hoy solo dice que hay uno cerca)</td></tr></table>
+<div class="nota ok">Preferimos mostrar lo que falta. Un inversionista que conoce los límites desde el principio puede decidir mejor, y cada límite ya tiene un siguiente paso concreto.</div>
+</div>
+
+<div class="sec2">
+<div class="kick">Por qué es diferente</div>
+<h1>Frente a otras formas de detectar drones</h1>
+<table><tr><th>Forma</th><th>Costo</th><th>¿Necesita ver el dron?</th><th>¿Emite señales?</th><th>¿Funciona de noche?</th></tr>
+<tr><td>Vigilancia con personas</td><td class="mid">Alto (turnos)</td><td class="no">Sí</td><td class="yes">No</td><td class="no">Difícil</td></tr>
+<tr><td>Cámaras</td><td class="mid">Medio</td><td class="no">Sí</td><td class="yes">No</td><td class="mid">Con equipo especial</td></tr>
+<tr><td>Radar</td><td class="no">Muy alto</td><td class="yes">No</td><td class="no">Sí</td><td class="yes">Sí</td></tr>
+<tr><td>Detectores de radio profesionales</td><td class="no">Alto</td><td class="yes">No</td><td class="yes">No</td><td class="yes">Sí</td></tr>
+<tr><td><b>Centinela RF</b></td><td class="yes">Muy bajo</td><td class="yes">No</td><td class="yes">No</td><td class="yes">Sí</td></tr></table>
+<p class="small">Comparación cualitativa. Los costos de otras soluciones dependen del proveedor y no se cotizaron.</p>
+<h2>Nuestras ventajas</h2>
+<ul><li><b>Legal y discreto:</b> solo escucha. No bloquea ni derriba, que en Colombia sería ilegal sin permiso.</li><li><b>Sin internet:</b> decide en el equipo, así que sirve en zonas rurales o si cae la red.</li><li><b>Barato y replicable:</b> piezas comunes de electrónica; se pueden poner varios.</li><li><b>Aprende en el sitio:</b> se puede reentrenar desde el celular con el ruido de cada lugar.</li></ul>
+</div>
+
+<div class="sec2">
+<div class="kick">Mercado</div>
+<h1>A quién le sirve</h1>
+<table><tr><th style="width:24%">Cliente</th><th>Su problema</th><th>Cómo lo ayuda Centinela RF</th></tr>
+<tr><td>Fuerza pública en zonas de riesgo</td><td>Drones con explosivos sobre bases y patrullas</td><td>Aviso temprano barato para cada puesto, sin depender de internet</td></tr>
+<tr><td>Cárceles</td><td>Drones que entran objetos prohibidos</td><td>Alerta cuando un control se activa cerca del perímetro</td></tr>
+<tr><td>Infraestructura (energía, agua, petróleo)</td><td>Vigilancia o sabotaje desde el aire</td><td>Varios nodos baratos alrededor de la instalación</td></tr>
+<tr><td>Fincas y empresas agrícolas</td><td>Vigilancia de terceros, robo</td><td>Aviso en el celular del administrador</td></tr>
+<tr><td>Eventos y estadios</td><td>Drones sobre multitudes</td><td>Equipo portátil durante el evento</td></tr>
+<tr><td>Hogares y conjuntos</td><td>Privacidad</td><td>Alerta discreta, sin cámaras apuntando a los vecinos</td></tr></table>
+<h2>Cómo podría ganar dinero</h2>
+<div class="grid3">
+<div class="card"><div class="num" style="font-size:15pt">Venta del equipo</div><div class="lbl">Cada nodo se vende armado y probado</div></div>
+<div class="card"><div class="num" style="font-size:15pt">Suscripción</div><div class="lbl">Historial en la nube, alertas a varios celulares y reportes</div></div>
+<div class="card"><div class="num" style="font-size:15pt">Proyectos</div><div class="lbl">Redes de varios nodos para instalaciones grandes</div></div>
+</div>
+<h2>Costo de las piezas del prototipo</h2>
+<table><tr><th>Pieza</th><th>Para qué</th><th>Precio aproximado (USD)</th></tr>
+<tr><td>Placa ESP32-S3</td><td>El cerebro</td><td>8 a 15</td></tr>
+<tr><td>Radio nRF24L01+ con antena</td><td>El oído</td><td>3 a 6</td></tr>
+<tr><td>Placa ESP32 devkit</td><td>Conexión con el celular y la nube</td><td>4 a 8</td></tr>
+<tr><td>ESP32-CAM</td><td>Control por gestos (opcional)</td><td>6 a 10</td></tr>
+<tr><td>Módulo de sonido y parlante</td><td>La alarma</td><td>2 a 4</td></tr>
+<tr><td>Cables, protoboard, condensador</td><td>Montaje</td><td>3 a 5</td></tr>
+<tr><td><b>Total</b></td><td></td><td><b>26 a 48</b></td></tr></table>
+<p class="small">Orden de magnitud en tiendas de electrónica en línea; no es una cotización. No incluye carcasa, mano de obra ni certificación.</p>
+</div>
+
+<div class="sec2">
+<div class="kick">Hoja de ruta</div>
+<h1>Del prototipo al producto</h1>
+<div class="road">
+<div class="f"><span class="e">HOY</span><b>Prototipo</b><i>Detecta un dron en 2,4 GHz, alerta, app, nube y gestos</i></div>
+<div class="f"><span class="e">FASE 1</span><b>Validación en campo</b><i>Medir alcance afuera, noches completas, varios drones y lugares</i></div>
+<div class="f"><span class="e">FASE 2</span><b>Piloto</b><i>Carcasa, batería, banda de 5,8 GHz y prueba con un cliente real</i></div>
+<div class="f"><span class="e">FASE 3</span><b>Red de nodos</b><i>Varios equipos que se comparan para ubicar el dron</i></div>
+</div>
+<h2>Riesgos y cómo los manejamos</h2>
+<table><tr><th>Riesgo</th><th>Qué hacemos</th></tr>
+<tr><td>Drones que usan otra frecuencia (5,8 GHz)</td><td>Agregar un segundo receptor en la fase 2</td></tr>
+<tr><td>Falsas alarmas en lugares con mucho WiFi</td><td>Reentrenar en el sitio desde el celular; la regla de dos lecturas seguidas ya filtra alarmas sueltas</td></tr>
+<tr><td>Alcance menor al esperado</td><td>Antenas mejores y varios nodos en red</td></tr>
+<tr><td>Regulación</td><td>El equipo solo recibe; no interfiere ni derriba</td></tr>
+<tr><td>Competidores grandes</td><td>Competimos por precio, simplicidad y uso sin internet, no por alcance extremo</td></tr></table>
+<h2>Qué necesitamos</h2>
+<ul><li>Recursos para pruebas en campo: otros drones, desplazamientos, permisos para volar.</li><li>Componentes para 5 a 10 nodos piloto y la banda de 5,8 GHz.</li><li>Diseño de carcasa y alimentación por batería.</li><li>Contacto con un primer cliente piloto.</li></ul>
+<div class="nota">El monto de la inversión y lo que se ofrece a cambio los define el equipo antes de presentar. Este documento deja el espacio para eso.</div>
+</div>
+
+<div class="sec">
+<div class="kick">Preparación</div>
+<h1>Preguntas que nos pueden hacer</h1>
+<h2><span class="who p1">Integrante 1</span> El negocio</h2>
+<div class="qa"><div class="q">¿Quién compraría esto primero?</div><div class="a">Quien hoy no tiene nada y no puede pagar un sistema profesional: puestos de la fuerza pública en zonas rurales, cárceles, fincas e infraestructura pequeña.</div></div>
+<div class="qa"><div class="q">¿Cuánto costaría?</div><div class="a">Las piezas cuestan menos de 50 dólares. El precio final depende de carcasa, batería, pruebas y soporte; todavía no lo hemos fijado.</div></div>
+<div class="qa"><div class="q">¿Cómo ganan dinero?</div><div class="a">Venta del equipo, una suscripción para el historial y las alertas en varios celulares, y proyectos con varios nodos.</div></div>
+<div class="qa"><div class="q">¿Quién es la competencia?</div><div class="a">Radares, cámaras y detectores de radio profesionales. Son más potentes pero mucho más caros. Nosotros apostamos por algo barato que se pueda poner en muchos lugares.</div></div>
+<div class="qa"><div class="q">¿Qué harían con la inversión?</div><div class="a">Validar en campo, construir de 5 a 10 nodos piloto, agregar 5,8 GHz y diseñar la carcasa.</div></div>
+<h2><span class="who p2">Integrante 2</span> Cómo funciona</h2>
+<div class="qa"><div class="q">¿Cómo sabe que es un dron y no el WiFi?</div><div class="a">El control del dron deja una huella de radio distinta. El modelo aprendió esa huella con grabaciones reales y acierta 97 de cada 100 veces.</div></div>
+<div class="qa"><div class="q">¿Necesita internet?</div><div class="a">No. Decide dentro del equipo. Internet solo sirve para guardar el historial en la nube.</div></div>
+<div class="qa"><div class="q">¿Graba a las personas?</div><div class="a">No. El detector solo escucha radio. La cámara de gestos procesa la foto en el momento y la descarta.</div></div>
+<div class="qa"><div class="q">¿Hasta dónde detecta?</div><div class="a">Probado dentro de una casa: 8 metros con el dron volando. Afuera estimamos unos 30 metros, pero falta medirlo.</div></div>
+<div class="qa"><div class="q">¿Da muchas falsas alarmas?</div><div class="a">En las grabaciones, ninguna: exige dos lecturas seguidas de dron. Falta probar noches completas en lugares reales.</div></div>
+<h2><span class="who p3">Integrante 3</span> Riesgos y legalidad</h2>
+<div class="qa"><div class="q">¿Es legal?</div><div class="a">Sí, porque solo escucha. Bloquear o derribar drones sin permiso es ilegal en Colombia, y Centinela RF no lo hace.</div></div>
+<div class="qa"><div class="q">¿Y si el dron usa otra frecuencia?</div><div class="a">Hoy no lo vería. Agregar la banda de 5,8 GHz es parte de la fase 2.</div></div>
+<div class="qa"><div class="q">¿Dice dónde está el dron?</div><div class="a">Todavía no: dice que hay uno cerca. Con varios nodos en red se puede estimar la posición; es la fase 3.</div></div>
+<div class="qa"><div class="q">¿Lo pueden copiar?</div><div class="a">Las piezas son comunes. El valor está en el modelo, los datos reales grabados, la app y el conocimiento para ajustarlo en cada sitio.</div></div>
+<h2><span class="who p4">Integrante 4</span> Equipo y siguientes pasos</h2>
+<div class="qa"><div class="q">¿Quiénes son ustedes?</div><div class="a">Estudiantes de la Especialización en Inteligencia Artificial de la UAO. Construimos el prototipo completo: electrónica, modelo, app y nube.</div></div>
+<div class="qa"><div class="q">¿Qué tan rápido pueden tener un piloto?</div><div class="a">El prototipo ya funciona; el piloto depende de las pruebas en campo y de la carcasa. Preferimos no prometer fechas antes de validar el alcance.</div></div>
+<div class="qa"><div class="q">¿Para qué sirve la cámara?</div><div class="a">Para manejar el equipo con gestos: mano abierta prueba la alarma y puño la activa o desactiva.</div></div>
+<div class="qa"><div class="q">¿Qué necesitan además de dinero?</div><div class="a">Un primer cliente piloto y permisos para probar con drones en campo abierto.</div></div>
+</div>
+
+<div class="sec">
+<div class="kick">Pitch</div>
+<h1>Guion del pitch para 4 personas (6 minutos)</h1>
+<p>Frases cortas, sin términos técnicos. Lo que va en cursiva se dice con palabras propias. Si alguien pregunta algo técnico, se responde en una frase y se ofrece el dossier técnico.</p>
+<table><tr><th>Integrante</th><th>Bloque</th><th>Tiempo</th></tr>
+<tr><td><span class="who p1">1</span></td><td>Gancho y problema</td><td>0:00 - 1:15</td></tr>
+<tr><td><span class="who p2">2</span></td><td>La solución y el video</td><td>1:15 - 2:45</td></tr>
+<tr><td><span class="who p3">3</span></td><td>Prueba, ventajas y mercado</td><td>2:45 - 4:15</td></tr>
+<tr><td><span class="who p4">4</span></td><td>Hoja de ruta, lo que pedimos y cierre</td><td>4:15 - 6:00</td></tr></table>
+<div class="esc"><div class="t"><span class="who p1">1</span>Gancho <span>0:00 - 0:30</span></div>
+<div class="dice">"Levanten la mano si saben qué hay volando sobre su casa en este momento." (Pausa.) "Nadie lo sabe. Y hoy cualquiera puede comprar un dron por menos de lo que cuesta un celular."</div></div>
+<div class="esc"><div class="t"><span class="who p1">1</span>El problema <span>0:30 - 1:15 · Gráfica de ataques</span></div>
+<div class="dice">"En Colombia los ataques con drones pasaron de 61 en 2024 a 333 en 2025. Este año siguen subiendo. Y no es solo la guerra: drones que espían casas, que meten cosas a las cárceles o que sobrevuelan una planta eléctrica. El problema siempre es el mismo: nadie se entera a tiempo."</div></div>
+<div class="esc"><div class="t"><span class="who p2">2</span>La solución <span>1:15 - 2:00 · Los tres pasos</span></div>
+<div class="dice">"Centinela RF escucha el aire. Todo dron tiene un control que le habla por radio, y esa señal no se puede esconder. Nuestro equipo la reconoce con inteligencia artificial y avisa en segundos. Escucha, piensa y avisa. No necesita internet y no emite nada."</div></div>
+<div class="esc"><div class="t"><span class="who p2">2</span>Video comercial <span>2:00 - 2:45</span></div>
+<div class="dice">"Mejor véanlo." (Poner el video comercial de 50 segundos.)</div>
+<div class="hace">Plan B si falla el video: mostrar en el celular la app en alerta.</div></div>
+<div class="esc"><div class="t"><span class="who p3">3</span>Prueba y ventajas <span>2:45 - 3:30</span></div>
+<div class="dice">"Esto no es una idea: es un prototipo que funciona. Acierta 97 de cada 100 veces, no dio falsas alarmas en las pruebas y detectó un dron volando a 8 metros, con paredes de por medio. Las piezas cuestan menos de 50 dólares. Un radar cuesta muchísimo más y además emite señales."</div></div>
+<div class="esc"><div class="t"><span class="who p3">3</span>Mercado <span>3:30 - 4:15</span></div>
+<div class="dice">"¿Quién lo necesita? Puestos de la fuerza pública en zonas rurales, cárceles, plantas de energía, fincas y eventos. Todos los que hoy no tienen nada porque los sistemas profesionales son demasiado caros."</div></div>
+<div class="esc"><div class="t"><span class="who p4">4</span>Hoja de ruta y lo que falta <span>4:15 - 5:15</span></div>
+<div class="dice">"Somos claros con lo que falta: medir el alcance en campo abierto, probar más drones y agregar la otra frecuencia que usan algunos. Ese es el siguiente paso. Después, un piloto con un cliente real, y al final una red de equipos que diga dónde está el dron."</div></div>
+<div class="esc"><div class="t"><span class="who p4">4</span>Lo que pedimos y cierre <span>5:15 - 6:00</span></div>
+<div class="dice">"Buscamos [monto] para llevar Centinela RF del prototipo a un piloto en campo, y un primer cliente que quiera probarlo. Hoy nadie sabe qué vuela sobre su casa. Con Centinela RF, lo sabrías en segundos. Gracias."</div>
+<div class="hace">Dejar la última diapositiva con el logo y el contacto mientras empiezan las preguntas.</div></div>
+<h2>Consejos para el pitch</h2>
+<ul class="chk"><li>Cada integrante se aprende sus dos bloques, no todo el guion.</li><li>Decir siempre "97 de cada 100", no "97,4 % de exactitud".</li><li>Si preguntan algo que no se ha probado, decirlo: "eso todavía no lo medimos, es el siguiente paso".</li><li>Llevar el prototipo a la mesa; que lo puedan ver.</li><li>Definir el monto antes de presentar y reemplazar [monto].</li></ul>
+<h2>Fuentes de las cifras</h2>
+<ul class="small"><li>UNMAS, citado por El País (17 de abril de 2026): elpais.com.co/judicial/onu-asegura-que-ataques-con-drones-y-explosivos-se-han-disparado-en-colombia-1722.html</li><li>Defensoría del Pueblo, citado por Al Jazeera / AFP (18 de septiembre de 2026): aljazeera.com/news/2026/9/18/drone-attacks-by-colombian-armed-groups-more-than-double-in-early-2026</li><li>Las cifras del prototipo salen de las pruebas del proyecto (repositorio github.com/JCMelendezT/IAoT).</li></ul>
+</div>
+</body></html>

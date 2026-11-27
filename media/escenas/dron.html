@@ -1,0 +1,154 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  html,body{margin:0;background:#020306;overflow:hidden}
+  #wrap{position:relative}
+  canvas{display:block}
+  #ui{position:absolute;inset:0;pointer-events:none;font-family:'DejaVu Sans Mono',monospace;color:#d8f3ff}
+  .esq{position:absolute;width:70px;height:70px;border:3px solid rgba(160,230,255,.75)}
+  .tl{left:40px;top:40px;border-right:0;border-bottom:0}.tr{right:40px;top:40px;border-left:0;border-bottom:0}
+  .bl{left:40px;bottom:40px;border-right:0;border-top:0}.br{right:40px;bottom:40px;border-left:0;border-top:0}
+  .hud{position:absolute;font-size:26px;letter-spacing:2px;text-shadow:0 0 8px rgba(95,212,255,.6)}
+  #rec{color:#ff4d5e}
+  .tgt{position:absolute;border:3px solid #ff3b4f;transform:translate(-50%,-50%);box-shadow:0 0 14px rgba(255,59,79,.6)}
+  .tgt span{position:absolute;left:100%;top:-30px;margin-left:8px;font-size:18px;color:#ff6b7a;white-space:nowrap;background:rgba(0,0,0,.45);padding:2px 6px}
+  #centro{position:absolute;left:0;right:0;text-align:center;font-family:Montserrat,sans-serif}
+  #centro .l{opacity:0;font-weight:900;color:#fff;text-shadow:0 0 30px rgba(0,0,0,.9),0 0 50px rgba(255,59,79,.35)}
+  #centro .s{opacity:0;font-weight:700;color:#ff8a96;letter-spacing:3px}
+  #barras{position:absolute;display:flex;align-items:flex-end;gap:3px;height:70px}
+  #barras i{display:block;width:5px;background:#5fd4ff;opacity:.8}
+  #scan{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,rgba(95,212,255,.8),transparent)}
+</style></head>
+<body><div id="wrap"><div id="ui">
+  <div class="esq tl"></div><div class="esq tr"></div><div class="esq bl"></div><div class="esq br"></div>
+  <div class="hud" id="h1">SENSOR RF · 2.4 GHz</div>
+  <div class="hud" id="h2"><span id="rec">● REC</span> <span id="tc">00:00:00</span></div>
+  <div class="hud" id="h3">BARRIDO 126 CANALES</div>
+  <div id="barras"></div><div id="scan"></div>
+  <div id="centro"></div>
+</div></div>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const Q = new URLSearchParams(location.search);
+const V = Q.get('o') !== 'h';
+const TXT = Q.get('t') || 'com';
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+document.getElementById('wrap').style.cssText = `width:${W}px;height:${H}px`;
+let s = 12345; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.getElementById('wrap').prepend(renderer.domElement);
+const scene = new THREE.Scene();
+const FONDO = 0x0d1a2c; scene.background = new THREE.Color(FONDO); scene.fog = new THREE.FogExp2(0x0d1a2c, 0.011);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.6;
+const camera = new THREE.PerspectiveCamera(V ? 50 : 34, W / H, 0.1, 600);
+
+scene.add(new THREE.HemisphereLight(0x8fb0df, 0x101318, 1.1));
+const contra = new THREE.DirectionalLight(0x7fd4ff, 4.0); contra.position.set(0, 12, -80); scene.add(contra);
+const calida = new THREE.DirectionalLight(0xffa060, 1.4); calida.position.set(30, 6, 20); scene.add(calida);
+const luna = new THREE.DirectionalLight(0x9ec3ff, 2.6); luna.position.set(-20, 30, -30); scene.add(luna);
+const roja = new THREE.PointLight(0xff3040, 60, 60); roja.position.set(8, 3, 10); scene.add(roja);
+
+// ciudad en la niebla
+const mEd = new THREE.MeshStandardMaterial({ color: 0x18212f, roughness: 0.85 });
+const mVent = new THREE.MeshBasicMaterial({ color: 0xffb347 });
+for (let i = 0; i < 160; i++) {
+  const w = 3 + rnd() * 7, h = 6 + rnd() * 34, d = 3 + rnd() * 7;
+  const x = (rnd() - 0.5) * 260, z = -40 - rnd() * 160;
+  const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mEd); b.position.set(x, h / 2 - 2, z); scene.add(b);
+  const nv = Math.floor(rnd() * 14);
+  for (let k = 0; k < nv; k++) { const v = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), mVent); v.position.set(x + (rnd() - 0.5) * w * 0.8, rnd() * h - 2, z + d / 2 + 0.01); scene.add(v); }
+}
+const grid = new THREE.GridHelper(400, 160, 0x1d5f8f, 0x0d2b44); grid.position.y = -2; grid.material.transparent = true; grid.material.opacity = 0.5; scene.add(grid);
+
+// dron cuadricoptero
+const mC = new THREE.MeshStandardMaterial({ color: 0x1a1d22, roughness: 0.45, metalness: 0.6 });
+const mG = new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.35, metalness: 0.8 });
+const mHel = new THREE.MeshBasicMaterial({ color: 0x8892a0, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false });
+const mPala = new THREE.MeshStandardMaterial({ color: 0x111316, roughness: 0.6 });
+function dron() {
+  const g = new THREE.Group();
+  const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.32, 1.6), mC); g.add(cuerpo);
+  const tapa = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.18, 1.0), mG); tapa.position.y = 0.24; g.add(tapa);
+  const cam = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 16), mG); cam.position.set(0, -0.22, 0.75); g.add(cam);
+  g.userData.rot = []; g.userData.leds = [];
+  for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+    const brazo = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.7, 8), mC);
+    brazo.rotation.z = Math.PI / 2; brazo.rotation.y = Math.atan2(sz, sx) * -1; brazo.position.set(sx * 0.6, 0, sz * 0.6); g.add(brazo);
+    const mot = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.22, 16), mG); mot.position.set(sx * 1.2, 0.08, sz * 1.2); g.add(mot);
+    const r = new THREE.Group(); r.position.set(sx * 1.2, 0.22, sz * 1.2);
+    const disco = new THREE.Mesh(new THREE.CircleGeometry(0.75, 32), mHel); disco.rotation.x = -Math.PI / 2; r.add(disco);
+    const p1 = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.02, 0.1), mPala); r.add(p1);
+    g.add(r); g.userData.rot.push(r);
+    const led = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), new THREE.MeshBasicMaterial({ color: sz > 0 ? 0xff2a3a : 0x2aff7a }));
+    led.position.set(sx * 1.2, -0.08, sz * 1.2); g.add(led); g.userData.leds.push(led);
+  }
+  return g;
+}
+const N = 9, drones = [];
+for (let i = 0; i < N; i++) {
+  const d = dron(); scene.add(d);
+  d.userData.base = new THREE.Vector3((rnd() - 0.5) * (V ? 12 : 24), 2.5 + rnd() * (V ? 11 : 7), -48 - rnd() * 30);
+  d.userData.vel = 5 + rnd() * 3; d.userData.fase = rnd() * 6.28; d.userData.esc = 1.5 + rnd() * 0.6;
+  drones.push(d);
+}
+// el primero viene directo a la camara
+drones[0].userData.base.set(0.5, 5.0, -44); drones[0].userData.vel = 6.2;
+
+// HUD
+const ui = document.getElementById('ui');
+const pos = (id, css) => Object.assign(document.getElementById(id).style, css);
+pos('h1', { left: '130px', top: '58px' }); pos('h2', { right: '130px', top: '58px' }); pos('h3', { left: '130px', bottom: '58px' });
+pos('barras', { right: '130px', bottom: '58px' });
+const barras = document.getElementById('barras'); for (let i = 0; i < 42; i++) barras.appendChild(document.createElement('i'));
+const tgts = drones.map((d, i) => { const e = document.createElement('div'); e.className = 'tgt'; e.innerHTML = `<span>DRON ${String(i + 1).padStart(2, '0')} · ${(2.42 + rnd() * 0.04).toFixed(3)} GHz</span>`; ui.appendChild(e); return e; });
+const centro = document.getElementById('centro');
+centro.style.top = V ? '1180px' : '640px';
+const T = TXT === 'com'
+  ? [[0.6, 2.4, 'COLOMBIA', V ? 120 : 110, 'l'], [2.6, 4.4, 'En 2024 hubo 61 ataques con drones', V ? 54 : 60, 'l'], [4.6, 7.0, '#CONT', V ? 190 : 170, 'l'], [4.9, 7.0, 'ataques en 2025', V ? 52 : 50, 's']]
+  : [[0.6, 2.8, 'COLOMBIA · 2024: 61 ataques con drones', 64, 'l'], [3.0, 5.3, '#CONT', 170, 'l'], [3.3, 5.3, 'ataques en 2025 · UNMAS', 44, 's'], [5.5, 8.0, 'Enero a mayo de 2026: +146 %', 64, 'l'], [5.8, 8.0, 'DEFENSORÍA DEL PUEBLO', 40, 's']];
+const els = T.map(([a, b, tx, fs, cl]) => { const d = document.createElement('div'); d.className = cl; d.style.fontSize = fs + 'px'; d.style.position = 'absolute'; d.style.left = '0'; d.style.right = '0'; d.style.top = (cl === 's' ? (fs > 45 ? 200 : 190) : 0) + 'px'; d.textContent = tx; centro.appendChild(d); return d; });
+
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), ramp = (t, a, b) => clamp((t - a) / (b - a));
+window.render = function (t) {
+  drones.forEach((d, i) => {
+    const u = d.userData;
+    d.position.set(u.base.x + Math.sin(t * 0.9 + u.fase) * 0.8, u.base.y + Math.sin(t * 1.7 + u.fase) * 0.35, u.base.z + t * u.vel);
+    d.rotation.set(0.18 + Math.sin(t + u.fase) * 0.05, Math.PI + Math.sin(t * 0.5 + u.fase) * 0.2, Math.sin(t * 1.3 + u.fase) * 0.08);
+    d.scale.setScalar(u.esc);
+    u.rot.forEach((r, k) => r.rotation.y = t * 90 * (k % 2 ? 1 : -1) + k);
+    u.leds.forEach(l => l.visible = Math.floor(t * 3 + i) % 2 === 0);
+  });
+  const sh = 0.05;
+  camera.position.set(Math.sin(t * 2.1) * sh + Math.sin(t * 0.3) * 1.2, 1.2 + Math.sin(t * 2.7) * sh, 14 - t * 0.6);
+  camera.lookAt(Math.sin(t * 0.3) * 1.2, 4.5, -20);
+  camera.updateMatrixWorld();
+  drones.forEach((d, i) => {
+    const v = d.position.clone().project(camera), e = tgts[i];
+    const dist = camera.position.distanceTo(d.position);
+    const vis = v.z < 1 && Math.abs(v.x) < 0.95 && Math.abs(v.y) < 0.95 && dist < 70;
+    const lock = ramp(t, 0.4 + i * 0.25, 0.7 + i * 0.25);
+    const sz = clamp(2600 / dist, 34, 260) * (1.6 - 0.6 * lock);
+    e.style.display = vis ? 'block' : 'none'; e.style.opacity = lock;
+    e.style.left = ((v.x + 1) / 2 * W) + 'px'; e.style.top = ((1 - v.y) / 2 * H) + 'px'; e.style.width = sz + 'px'; e.style.height = sz + 'px';
+    e.querySelector('span').style.display = sz > 60 ? 'block' : 'none';
+  });
+  document.getElementById('tc').textContent = '00:00:' + String(Math.floor(t)).padStart(2, '0') + ':' + String(Math.floor((t % 1) * 30)).padStart(2, '0');
+  document.getElementById('rec').style.opacity = Math.floor(t * 2) % 2 ? 0.2 : 1;
+  [...barras.children].forEach((b, i) => { const x = Math.sin(i * 1.7 + t * 9) * 0.5 + 0.5, dr = (i > 12 && i < 26) ? 0.4 + 0.6 * Math.abs(Math.sin(i * 3.1 + t * 13)) : 0.15 + 0.3 * x; b.style.height = (dr * 70) + 'px'; b.style.background = (i > 12 && i < 26) ? '#ff4d5e' : '#5fd4ff'; });
+  document.getElementById('scan').style.top = ((t * 0.35 % 1) * H) + 'px';
+  T.forEach(([a, b, tx], k) => {
+    const e = els[k]; const op = ramp(t, a, a + 0.25) * (1 - ramp(t, b - 0.25, b));
+    e.style.opacity = op; e.style.transform = `scale(${1.08 - 0.08 * ramp(t, a, a + 0.4)})`;
+    if (tx === '#CONT') { const n = Math.round(61 + (333 - 61) * Math.pow(ramp(t, a, a + 1.3), 0.6)); e.textContent = n; e.style.color = n > 300 ? '#ff4d5e' : '#fff'; }
+  });
+  renderer.render(scene, camera); return true;
+};
+document.fonts.ready.then(() => { window.render(0); window.listo = true; });
+</script></body></html>

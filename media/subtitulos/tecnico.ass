@@ -1,0 +1,18 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 2
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: S,Montserrat,48,&H00FFFFFF,&H00FFFFFF,&H00000000,&H99050A12,-1,0,0,0,100,100,0,0,3,14,0,2,80,80,50,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:09.00,0:00:15.60,S,,0,0,0,,{\fad(150,150)}Detecta drones escuchando su {\c&H00FFD45F&}señal de radio{\c&H00FFFFFF&}, sin emitir nada.
+Dialogue: 0,0:00:16.40,0:00:23.60,S,,0,0,0,,{\fad(150,150)}Un dron con control de {\c&H00FFD45F&}2,4 GHz{\c&H00FFFFFF&} se acerca. El detector está en el escritorio.
+Dialogue: 0,0:00:25.50,0:00:34.60,S,,0,0,0,,{\fad(150,150)}El {\c&H00FFD45F&}S3{\c&H00FFFFFF&} escucha y decide, el {\c&H00FFD45F&}devkit{\c&H00FFFFFF&} avisa y guarda, la {\c&H00FFD45F&}cámara{\c&H00FFFFFF&} entiende gestos.
+Dialogue: 0,0:01:24.40,0:01:35.60,S,,0,0,0,,{\fad(150,150)}En vivo: la app pasa de DESPEJADO a {\c&H004D4DFF&}ALERTA{\c&H00FFFFFF&} con dos ventanas seguidas de dron.
+Dialogue: 0,0:01:36.40,0:01:47.60,S,,0,0,0,,{\fad(150,150)}Desde la app se graba con etiqueta y se {\c&H00FFD45F&}reentrena{\c&H00FFFFFF&} el modelo, sin el PC.
+Dialogue: 0,0:02:13.50,0:02:26.60,S,,0,0,0,,{\fad(150,150)}Mano abierta: la cámara reconoce el gesto y el devkit {\c&H00FFD45F&}prueba el sonido{\c&H00FFFFFF&}.

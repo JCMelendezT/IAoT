@@ -1,0 +1,70 @@
+@page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+@page :first { margin: 0; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: 'Inter', 'Montserrat', sans-serif; color: #10233a; font-size: 10.2pt; line-height: 1.5; }
+h1, h2, h3, .num { font-family: 'Montserrat', sans-serif; }
+h1 { font-size: 22pt; font-weight: 900; margin: 0 0 4mm; color: #0b2540; letter-spacing: -0.3px; }
+h2 { font-size: 13.5pt; font-weight: 800; margin: 7mm 0 2.5mm; color: #0b2540; }
+h3 { font-size: 11pt; font-weight: 800; margin: 5mm 0 1.5mm; color: #0e6f9a; }
+p { margin: 0 0 2.6mm; }
+.sec { page-break-before: always; }
+.kick { font-family: 'Montserrat', sans-serif; font-size: 8.5pt; font-weight: 800; letter-spacing: 2.5px; color: #0e8fc4; text-transform: uppercase; margin-bottom: 1.5mm; }
+.lead { font-size: 12pt; color: #24425f; margin-bottom: 5mm; }
+table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 9.6pt; }
+th { text-align: left; background: #0b2540; color: #fff; font-weight: 700; padding: 2mm 2.6mm; font-family: 'Montserrat', sans-serif; font-size: 8.8pt; }
+td { padding: 1.4mm 2.4mm; border-bottom: 1px solid #dbe4ec; vertical-align: top; }
+tr:nth-child(even) td { background: #f5f8fb; }
+figure { margin: 3mm 0 5mm; page-break-inside: avoid; }
+figure img { width: 100%; border-radius: 3mm; display: block; }
+figcaption { font-size: 8.8pt; color: #5b7084; margin-top: 1.5mm; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3.5mm; }
+.card { border: 1.4px solid #cfe0ec; border-radius: 3mm; padding: 3.5mm 4mm; background: #f7fbfe; page-break-inside: avoid; }
+.card .num { font-size: 22pt; font-weight: 900; color: #0e8fc4; line-height: 1.05; }
+.card .lbl { font-size: 8.8pt; color: #4d6377; margin-top: 1mm; }
+.card.g .num { color: #1f9d55; } .card.r .num { color: #e23b4e; } .card.a .num { color: #e08a00; }
+.nota { border-left: 4px solid #e08a00; background: #fff7ea; padding: 3mm 4mm; border-radius: 0 2.5mm 2.5mm 0; margin: 3mm 0 4mm; font-size: 9.8pt; page-break-inside: avoid; }
+.ok { border-left-color: #1f9d55; background: #ecf8f1; }
+.mal { border-left-color: #e23b4e; background: #fdeef0; }
+.flow { display: flex; align-items: stretch; gap: 0; margin: 3mm 0 5mm; page-break-inside: avoid; }
+.flow .st { flex: 1; background: #0b2540; color: #fff; border-radius: 2.5mm; padding: 3mm; font-size: 8.6pt; line-height: 1.35; }
+.flow .st b { display: block; font-family: 'Montserrat', sans-serif; font-size: 9.6pt; margin-bottom: 1mm; color: #7fdcff; }
+.flow .ar { width: 6mm; display: flex; align-items: center; justify-content: center; color: #0e8fc4; font-weight: 900; font-size: 13pt; }
+.qa { page-break-inside: avoid; margin: 0 0 3.2mm; }
+.qa .q { font-weight: 800; color: #0b2540; font-family: 'Montserrat', sans-serif; font-size: 10pt; }
+.qa .q:before { content: "P. "; color: #0e8fc4; }
+.qa .a { margin-left: 5mm; }
+.who { display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 8.4pt; color: #fff; padding: 0.6mm 2.4mm; border-radius: 10mm; margin-right: 1.5mm; }
+.p1 { background: #0e8fc4; } .p2 { background: #1f9d55; } .p3 { background: #e08a00; } .p4 { background: #8a4fd0; }
+.esc { border: 1.4px solid #dbe4ec; border-radius: 3mm; padding: 3mm 4mm; margin: 0 0 3.5mm; page-break-inside: avoid; }
+.esc .t { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 10pt; color: #0b2540; margin-bottom: 1.2mm; }
+.esc .t span { color: #5b7084; font-weight: 600; font-size: 8.8pt; margin-left: 2mm; }
+.esc .dice { font-style: italic; color: #24425f; margin: 1mm 0; }
+.esc .hace { font-size: 9pt; color: #5b7084; }
+.tl { position: relative; margin: 4mm 0 6mm; padding-left: 7mm; border-left: 3px solid #cfe0ec; }
+.tl .it { position: relative; margin: 0 0 2.8mm; page-break-inside: avoid; }
+.tl .it:before { content: ""; position: absolute; left: -9.6mm; top: 1.2mm; width: 3.4mm; height: 3.4mm; border-radius: 50%; background: #0e8fc4; border: 2px solid #fff; }
+.tl .d { font-family: 'Montserrat', sans-serif; font-weight: 800; color: #0e8fc4; font-size: 9pt; }
+.cover { height: 297mm; width: 210mm; position: relative; color: #fff; background: #04070d; overflow: hidden; }
+.cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
+.cover .in { position: absolute; left: 18mm; right: 18mm; bottom: 34mm; }
+.cover .k { font-family: 'Montserrat', sans-serif; font-weight: 800; letter-spacing: 3px; font-size: 10pt; color: #7fdcff; }
+.cover h1 { color: #fff; font-size: 40pt; letter-spacing: 3px; margin: 3mm 0 3mm; text-shadow: 0 0 20px rgba(95,212,255,.5); }
+.cover .s { font-size: 15pt; color: #d7ecf8; max-width: 160mm; line-height: 1.35; }
+.cover .m { margin-top: 10mm; font-size: 10pt; color: #a9c4d8; }
+.toc { columns: 2; column-gap: 8mm; font-size: 10pt; }
+.toc div { margin: 0 0 1.6mm; break-inside: avoid; }
+.toc b { color: #0e8fc4; font-family: 'Montserrat', sans-serif; margin-right: 2mm; }
+ul { margin: 0 0 3mm; padding-left: 5mm; } li { margin: 0 0 1.2mm; }
+code { font-family: 'DejaVu Sans Mono', monospace; font-size: 8.8pt; background: #eef3f7; padding: 0.2mm 1.2mm; border-radius: 1mm; }
+.cm td { text-align: center; font-weight: 800; font-family: 'Montserrat', sans-serif; font-size: 12pt; padding: 3mm; border: 2px solid #fff; }
+.cm th { text-align: center; }
+.small { font-size: 8.8pt; color: #5b7084; }
+.chk li { list-style: none; margin-left: -5mm; }
+.chk li:before { content: "✔ "; color: #1f9d55; font-weight: 900; }
+
+.sec2 { margin-top: 9mm; }
+.kick, h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+table { page-break-inside: auto; } tr { page-break-inside: avoid; }
